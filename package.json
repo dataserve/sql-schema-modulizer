@@ -1,0 +1,33 @@
+{
+  "name": "sql-schema-modulizer",
+  "version": "0.0.1",
+  "description": "Utilize reusable components as building blocks for architecting your SQL schema",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dataserve/sql-schema-modulizer.git"
+  },
+  "keywords": [
+    "sql",
+    "mysql",
+    "schema",
+    "inheritence",
+    "modulizer"
+  ],
+  "author": {
+    "name": "Kevin Deegan",
+    "url": "https://github.com/kdeegan"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dataserve/sql-schema-modulizer/issues"
+  },
+  "homepage": "https://github.com/dataserve/sql-schema-modulizer",
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^4.0.1"
+  }
+}
