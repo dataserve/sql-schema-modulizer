@@ -1,0 +1,43 @@
+{
+    "tables": {
+        "category": {
+            "fields": {
+                "id": {
+                    "type": "int",
+                    "key": "primary",
+                    "autoinc": true
+                },
+                "category": {
+                    "type": "string:256"
+                },
+                "slug": {
+                    "type": "string:256",
+                    "key": true
+                }
+            },
+            "relationships": {
+                "hasMany": [
+                    "$category_ref"
+                ]
+            }
+        },
+        "category_ref": {
+            "fields": {
+                "id": {
+                    "type": "int",
+                    "key": "primary",
+                    "autoinc": true
+                },
+                "$category_id": {
+                    "type": "int",
+                    "fillable": true
+                }
+            },
+            "relationships": {
+                "belongsTo": [
+                    "$category"
+                ]
+            }
+        }
+    }
+}
