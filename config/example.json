@@ -1,9 +1,0 @@
-{
-    "blog": {
-        "enable": "*",
-        "requires": {
-            "blog": null,
-            "user": null
-        }
-    }
-}

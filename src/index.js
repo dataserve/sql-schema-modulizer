@@ -8,6 +8,21 @@ const util = require("util");
 
 const MySql = require("./mysql");
 const DEBUG = true;
+const TIMESTAMPS_DEFAULT = {
+    modified: {
+        name: "mtime",
+        type: "timestamp",
+        fillable: false,
+        autoSetTimestamp: true,
+        autoUpdateTimestamp: true,
+    },
+    created: {
+        name: "ctime",
+        type: "timestamp",
+        fillable: false,
+        autoSetTimestamp: true,
+    },
+};
 
 function loadJson(path) {
     return JSON.parse(JSON.stringify(require(path)));
@@ -45,12 +60,13 @@ class SqlSchemaModulizer {
             if (enable) {
                 enable = new RegExp(enable, "i");
             }
+
+            let timestamps = typeof this.config[dbName].timestamps !== "undefined"
+                ? this.config[dbName].timestamps : TIMESTAMPS_DEFAULT;
             
             if (this.config[dbName].requires && Object.keys(this.config[dbName].requires).length) {
-                this.buildModuleExtends(dbName, this.config[dbName].extends);
-                
-                this.buildModuleRequires(dbName, this.config[dbName].requires);
-                
+                this.buildModuleRequires(dbName, this.config[dbName].requires, null, timestamps);
+
                 this.buildModules(dbName, enable);
             }
             
@@ -86,7 +102,82 @@ class SqlSchemaModulizer {
         return this.db.getTableSchema(tableName, tableConfig);
     }
 
-    buildModuleExtends(dbName, configExtends, parentModule, parentTableNamePrepend) {
+    buildModuleRequires(dbName, configRequires, parentTableNamePrepend, timestamps) {
+        if (!configRequires) {
+            return;
+        }
+        
+        for (let module in configRequires) {
+            if (!configRequires[module]) {
+                configRequires[module] = {};
+            }
+
+            let tmpParentTableNamePrepend = parentTableNamePrepend;
+            
+            let moduleSplit = module.split(":"), modulePrepended = null;
+            
+            let moduleName = moduleSplit[0], tableNamePrepend = moduleSplit[1];
+            
+            let timestampsTmp = Object.assign({}, timestamps);
+
+            if (tableNamePrepend) {
+                if (!tmpParentTableNamePrepend) {
+                    tmpParentTableNamePrepend= "";
+                } else {
+                    tmpParentTableNamePrepend += "_";
+                }
+                
+                tmpParentTableNamePrepend += tableNamePrepend;
+            }
+
+            if (tmpParentTableNamePrepend) {
+                modulePrepended = moduleName + ":" + tmpParentTableNamePrepend;
+            } else {
+                modulePrepended = module;
+            }
+
+            let configPassDown = this.extractPassDownVariables(configRequires[module]);
+
+            if (this.requires[dbName][modulePrepended]) {
+                this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], configRequires[module]);
+            } else {
+                this.requires[dbName][modulePrepended] = configRequires[module];
+            }
+
+            let modulePath = this.configDir + "/module" + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+
+            let moduleContents = loadJson(modulePath), childrenModules = [];
+
+            if (typeof moduleContents.timestamps !== "undefined") {
+                timestampsTmp = moduleContents.timestamps;
+            }
+
+            if (configPassDown.extends) {
+                moduleContents = _object.mergeWith(moduleContents, {extends: configPassDown.extends}, this.mergeConfig);
+            }
+
+            if (moduleContents.extends && Object.keys(moduleContents.extends).length) {
+                childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend, timestampsTmp);
+            }
+
+            if (childrenModules.length) {
+                this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], {childrenModules});
+            }
+
+
+            if (configPassDown.requires) {
+                moduleContents = _object.mergeWith(moduleContents, {requires: configPassDown.requires}, this.mergeConfig);
+            }
+
+            if (moduleContents.requires && Object.keys(moduleContents.requires).length) {
+                this.buildModuleRequires(dbName, moduleContents.requires, tmpParentTableNamePrepend, timestampsTmp);
+            }
+
+            this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], {timestamps: timestampsTmp});
+        }
+    }
+
+    buildModuleExtends(dbName, configExtends, parentModule, parentTableNamePrepend, timestamps) {
         if (!configExtends) {
             return;
         }
@@ -109,12 +200,14 @@ class SqlSchemaModulizer {
             if (!configExtends[module]) {
                 configExtends[module] = {};
             }
-            
+
             let tmpParentTableNamePrepend = parentTableNamePrepend;
             
             let moduleSplit = module.split(":"), modulePrepended = null;
             
             let moduleName = moduleSplit[0], tableNamePrepend = moduleSplit[1];
+
+            let timestampsTmp = Object.assign({}, timestamps);
 
             if (parentModuleName) {
                 if (!tmpParentTableNamePrepend) {
@@ -146,14 +239,16 @@ class SqlSchemaModulizer {
 
             let moduleContents = loadJson(modulePath), childrenModules = [];
 
+            if (typeof moduleContents.timestamps !== "undefined") {
+                timestampsTmp = moduleContents.timestamps;
+            }
+
             if (configPassDown.extends) {
-                console.log(moduleContents);
                 moduleContents = _object.mergeWith(moduleContents, {extends: configPassDown.extends}, this.mergeConfig);
-                console.log(moduleContents);
             }
 
             if (moduleContents.extends && Object.keys(moduleContents.extends).length) {
-                childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend);
+                childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend, timestampsTmp);
             }
 
             if (childrenModules.length) {
@@ -165,81 +260,16 @@ class SqlSchemaModulizer {
             }
             
             if (moduleContents.requires && Object.keys(moduleContents.requires).length) {
-                this.buildModuleRequires(dbName, moduleContents.requires, tmpParentTableNamePrepend);
+                this.buildModuleRequires(dbName, moduleContents.requires, tmpParentTableNamePrepend, timestampsTmp);
             }
 
             retChildrenModules.push(modulePrepended);
+
+            this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], {timestamps: timestampsTmp});
         }
 
         return retChildrenModules;
-    }
-    
-    buildModuleRequires(dbName, configRequires, parentTableNamePrepend) {
-        if (!configRequires) {
-            return;
-        }
-        
-        for (let module in configRequires) {
-            if (!configRequires[module]) {
-                configRequires[module] = {};
-            }
-
-            let tmpParentTableNamePrepend = parentTableNamePrepend;
-            
-            let moduleSplit = module.split(":"), modulePrepended = null;
-            
-            let moduleName = moduleSplit[0], tableNamePrepend = moduleSplit[1];
-
-            if (tableNamePrepend) {
-                if (!tmpParentTableNamePrepend) {
-                    tmpParentTableNamePrepend= "";
-                } else {
-                    tmpParentTableNamePrepend += "_";
-                }
-                
-                tmpParentTableNamePrepend += tableNamePrepend;
-            }
-
-            if (tmpParentTableNamePrepend) {
-                modulePrepended = moduleName + ":" + tmpParentTableNamePrepend;
-            } else {
-                modulePrepended = module;
-            }
-
-            let configPassDown = this.extractPassDownVariables(configRequires[module]);
-
-            if (this.requires[dbName][modulePrepended]) {
-                this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], configRequires[module]);
-            } else {
-                this.requires[dbName][modulePrepended] = configRequires[module];
-            }
-
-            let modulePath = this.configDir + "/module" + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
-
-            let moduleContents = loadJson(modulePath), childrenModules = [];
-
-            if (configPassDown.extends) {
-                moduleContents = _object.mergeWith(moduleContents, {extends: configPassDown.extends}, this.mergeConfig);
-            }
-
-            if (moduleContents.extends && Object.keys(moduleContents.extends).length) {
-                childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend);
-            }
-
-            if (childrenModules.length) {
-                this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], {childrenModules});
-            }
-
-
-            if (configPassDown.requires) {
-                moduleContents = _object.mergeWith(moduleContents, {requires: configPassDown.requires}, this.mergeConfig);
-            }
-
-            if (moduleContents.requires && Object.keys(moduleContents.requires).length) {
-                this.buildModuleRequires(dbName, moduleContents.requires, tmpParentTableNamePrepend);
-            }
-        }
-    }
+    }    
 
     extractPassDownVariables(config) {
         let configPassDown = {
@@ -264,7 +294,7 @@ class SqlSchemaModulizer {
         for (let module in this.requires[dbName]) {
             let opt = this.requires[dbName][module];
             
-            let extendTables = {}, parentModule = null, childrenModules = null;
+            let extendTables = {}, parentModule = null, childrenModules = null, timestamps;
             
             if (opt) {
                 if (opt.tables) {
@@ -278,6 +308,14 @@ class SqlSchemaModulizer {
                 if (opt.childrenModules) {
                     childrenModules = opt.childrenModules;
                 }
+
+                if (typeof opt.timestamps !== "undefined") {
+                    timestamps = opt.timestamps;
+                }
+            }
+
+            if (typeof timestamps === "undefined") {
+                throw new Error("timestamps object not found for " + dbName + " " + module);
             }
             
             let [moduleName, tableNamePrepend] = module.split(":");
@@ -321,6 +359,10 @@ class SqlSchemaModulizer {
                 }
                 
                 tables[tableName] = moduleContents.tables[table];
+
+                if (timestamps) {
+                    tables[tableName].timestamps = timestamps;
+                }
                 
                 moduleInfo[module].assoc[table] = tableName;
                 

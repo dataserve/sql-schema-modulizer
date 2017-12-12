@@ -3,24 +3,9 @@
 class MySql {
 
     constructor() {
-        this.timestampsDefault = {
-            modified: {
-                name: "mtime",
-                type: "timestamp",
-                fillable: false,
-                autoSetTimestamp: true,
-                autoUpdateTimestamp: true
-            },
-            created: {
-                name: "ctime",
-                type: "timestamp",
-                fillable: false,
-                autoSetTimestamp: true
-            },
-        };
     }
 
-    getDbSchema(dbName, dbConfig, timestamps) {
+    getDbSchema(dbName, dbConfig) {
         let tables = dbConfig.tables;
         
         let tablesSorted = Object.keys(tables).sort();
@@ -28,20 +13,20 @@ class MySql {
         let res = [];
         
         for (let tableName of tablesSorted) {
-            res.push(this.getTableSchema(tableName, tables[tableName], timestamps));
+            res.push(this.getTableSchema(tableName, tables[tableName]));
         }
         
         return res.join("\n\n");
     }
     
-    getTableSchema(tableName, tableConfig, timestamps) {
+    getTableSchema(tableName, tableConfig) {
         let fields = tableConfig.fields;
 
-        timestamps = typeof timestamps === "undefined" ? this.timestampsDefault : timestamps;
-        
         let keys = tableConfig.keys;
 
         let belongsTo = tableConfig.relationships && tableConfig.relationships.belongsTo ? tableConfig.relationships.belongsTo : null;
+
+        let timestamps = tableConfig.timestamps;
         
         let res = [];
         
@@ -52,7 +37,7 @@ class MySql {
         for (let field in fields) {
             defs.push("  " + this.outputFieldSchema(field, fields[field]));
         }
-        
+
         if (timestamps) {
             for (let field in timestamps) {
                 defs.push("  " + this.outputFieldSchema(timestamps[field].name, timestamps[field]));
