@@ -3,15 +3,13 @@
         "category": {
             "fields": {
                 "id": {
-                    "type": "int",
-                    "key": "primary",
-                    "autoinc": true
+                    "type": "autoIncId"
                 },
                 "category": {
-                    "type": "string:256"
+                    "type": "string"
                 },
                 "slug": {
-                    "type": "string:256",
+                    "type": "string",
                     "key": true
                 }
             },
@@ -24,13 +22,10 @@
         "category_ref": {
             "fields": {
                 "id": {
-                    "type": "int",
-                    "key": "primary",
-                    "autoinc": true
+                    "type": "autoIncId"
                 },
                 "$category_id": {
-                    "type": "int",
-                    "fillable": true
+                    "type": "int"
                 }
             },
             "relationships": {

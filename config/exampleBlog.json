@@ -4,21 +4,6 @@
         "requires": {
             "blog": null,
             "user": null
-        },
-        "timestamps": {
-            "modified": {
-                "name": "mtime",
-                "type": "timestamp",
-                "fillable": false,
-                "autoSetTimestamp": true,
-                "autoUpdateTimestamp": true
-            },
-            "created": {
-                "name": "ctime",
-                "type": "timestamp",
-                "fillable": false,
-                "autoSetTimestamp": true
-            }
         }
     }
 }

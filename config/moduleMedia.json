@@ -3,29 +3,22 @@
         "media": {
             "fields": {
                 "id": {
-                    "type": "int",
-                    "key": "primary",
-                    "autoinc": true
+                    "type": "autoIncId"
                 },
                 "type": {
-                    "type": "string:64",
-                    "fillable": true
+                    "type": "string:64"
                 },
                 "filename": {
-                    "type": "string:256",
-                    "fillable": true
+                    "type": "string"
                 },
                 "mime": {
-                    "type": "string:256",
-                    "fillable": true
+                    "type": "string"
                 },
                 "dimension": {
-                    "type": "string:64",
-                    "fillable": true
+                    "type": "string:64"
                 },
                 "duration": {
-                    "type": "int",
-                    "fillable": true
+                    "type": "int"
                 }
             }
         }

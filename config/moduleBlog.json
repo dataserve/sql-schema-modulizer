@@ -6,7 +6,6 @@
                     "fields": {
                         "^blog_id": {
                             "type": "int",
-                            "fillable": true,
                             "key": true
                         }
                     },
@@ -33,7 +32,6 @@
                     "fields": {
                         "^blog_id": {
                             "type": "int",
-                            "fillable": true,
                             "key": true
                         }
                     },
@@ -51,7 +49,6 @@
                     "fields": {
                         "^blog_id": {
                             "type": "int",
-                            "fillable": true,
                             "key": true
                         }
                     },
@@ -68,34 +65,26 @@
         "blog": {
             "fields": {
                 "id": {
-                    "type": "int",
-                    "key": "primary",
-                    "autoinc": true
+                    "type": "autoIncId"
                 },
                 "user_id": {
                     "type": "int",
-                    "fillable": true,
                     "key": true
                 },
                 "title": {
-                    "type": "string:256",
-                    "fillable": true
+                    "type": "string"
                 },
                 "post": {
-                    "type": "string:4096",
-                    "fillable": true
+                    "type": "string:4096"
                 },
                 "slug": {
-                    "type": "string:256",
-                    "fillable": true
+                    "type": "string"
                 },
                 ">media_id": {
-                    "type": "int",
-                    "fillable": true
+                    "type": "int"
                 },
                 ">comment_cnt": {
-                    "type": "int",
-                    "fillable": true
+                    "type": "int"
                 }
             },
             "relationships": {

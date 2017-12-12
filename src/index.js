@@ -7,8 +7,15 @@ const Type = require("type-of-is");
 const util = require("util");
 
 const MySql = require("./mysql");
+
 const DEBUG = true;
-const TIMESTAMPS_DEFAULT = {
+
+const TABLE_DEFAULTS = {
+    charset: "utf8",
+    engine: "InnoDB",
+};
+
+const TIMESTAMP_DEFAULTS = {
     modified: {
         name: "mtime",
         type: "timestamp",
@@ -24,6 +31,23 @@ const TIMESTAMPS_DEFAULT = {
     },
 };
 
+const FIELD_DEFAULTS = {
+    autoIncId: {
+        type: "int",
+        key: "primary",
+        autoInc: true
+    },
+    string: {
+        type: "string:255",
+    },
+};
+
+const CASCADE_DOWN_FIELDS = {
+    tableDefaults: TABLE_DEFAULTS,
+    timestamps: TIMESTAMP_DEFAULTS,
+    fieldDefaults: FIELD_DEFAULTS,
+};
+
 function loadJson(path) {
     return JSON.parse(JSON.stringify(require(path)));
 }
@@ -31,18 +55,30 @@ function loadJson(path) {
 class SqlSchemaModulizer {
 
     constructor(configPath, dbType) {
-        this.configDir = path.dirname(configPath);
+        if (Type.is(configPath, Object)) {
+            this.configDir = __dirname;
+            
+            this.config = configPath;
+        } else {
+            this.configDir = path.dirname(configPath);
 
-        this.config = loadJson(configPath);
+            this.config = loadJson(configPath);
+        }
 
         this.requires = {};
 
-        //TODO: add support for postgresql
-        if (dbType && dbType.toLowerCase !== "mysql") {
-            throw new Error("dbType not supported");
+        if (!dbType) {
+            dbType = "mysql";
         }
         
-        this.db = new MySql();
+        //TODO: add support for postgresql
+        switch (dbType.toLowerCase()) {
+        case "mysql":
+            this.db = new MySql();
+            break;
+        default:
+            throw new Error("dbType not supported");
+        }
 
         for (let dbName in this.config) {
             if (!this.requires[dbName]) {
@@ -61,11 +97,19 @@ class SqlSchemaModulizer {
                 enable = new RegExp(enable, "i");
             }
 
-            let timestamps = typeof this.config[dbName].timestamps !== "undefined"
-                ? this.config[dbName].timestamps : TIMESTAMPS_DEFAULT;
-            
+            let cascadeDown = {};
+
+            for (let cascadeField in CASCADE_DOWN_FIELDS) {
+                cascadeDown[cascadeField] = typeof this.config[dbName][cascadeField] !== "undefined"
+                    ? this.config[dbName][cascadeField] : CASCADE_DOWN_FIELDS[cascadeField];
+            }
+
+            if (this.config[dbName].tables) {
+                this.buildTables(dbName, cascadeDown);
+            }
+
             if (this.config[dbName].requires && Object.keys(this.config[dbName].requires).length) {
-                this.buildModuleRequires(dbName, this.config[dbName].requires, null, timestamps);
+                this.buildModuleRequires(dbName, this.config[dbName].requires, null, cascadeDown);
 
                 this.buildModules(dbName, enable);
             }
@@ -76,33 +120,23 @@ class SqlSchemaModulizer {
         }
     }
 
-    getDb() {
-        return this.db;
-    }
+    buildTables(dbName, cascadeDown) {
+        let cascadeVars = {};
 
-    getDbSchema(dbName) {
-        if (!this.config[dbName]) {
-            throw new Error("dbName '" + dbName + "' not found in config");
-        }
-        
-        return this.db.getDbSchema(dbName, this.config[dbName]);
-    }
-
-    getTableSchema(dbName, tableName) {
-        if (!this.config[dbName]) {
-            throw new Error("dbName '" + dbName + "' not found in config");
+        for (let cascadeField in CASCADE_DOWN_FIELDS) {
+            if (typeof cascadeDown[cascadeField] !== "undefined") {
+                cascadeVars[cascadeField] = cascadeDown[cascadeField];
+            }
         }
 
-        if (!this.config[dbName].tables || !this.config[dbName].tables[tableName]) {
-            throw new Error("tableName '" + tableName + "' not found in config");
+        for (let table in this.config[dbName].tables) {
+            let tableConfig = this.config[dbName].tables[table];
+            
+            _object.merge(tableConfig, cascadeVars);
         }
-
-        let tableConfig = this.config[dbName].tables[tableName];
-        
-        return this.db.getTableSchema(tableName, tableConfig);
     }
 
-    buildModuleRequires(dbName, configRequires, parentTableNamePrepend, timestamps) {
+    buildModuleRequires(dbName, configRequires, parentTableNamePrepend, cascadeDown) {
         if (!configRequires) {
             return;
         }
@@ -117,8 +151,6 @@ class SqlSchemaModulizer {
             let moduleSplit = module.split(":"), modulePrepended = null;
             
             let moduleName = moduleSplit[0], tableNamePrepend = moduleSplit[1];
-            
-            let timestampsTmp = Object.assign({}, timestamps);
 
             if (tableNamePrepend) {
                 if (!tmpParentTableNamePrepend) {
@@ -136,8 +168,6 @@ class SqlSchemaModulizer {
                 modulePrepended = module;
             }
 
-            let configPassDown = this.extractPassDownVariables(configRequires[module]);
-
             if (this.requires[dbName][modulePrepended]) {
                 this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], configRequires[module]);
             } else {
@@ -148,36 +178,35 @@ class SqlSchemaModulizer {
 
             let moduleContents = loadJson(modulePath), childrenModules = [];
 
-            if (typeof moduleContents.timestamps !== "undefined") {
-                timestampsTmp = moduleContents.timestamps;
-            }
+            let cascadeDownTmp = this.extractCascadeDownVariables(moduleContents, cascadeDown);
 
-            if (configPassDown.extends) {
-                moduleContents = _object.mergeWith(moduleContents, {extends: configPassDown.extends}, this.mergeConfig);
+            let passDown = this.extractPassDownVariables(configRequires[module]);
+            
+            if (passDown.extends) {
+                moduleContents = _object.merge(moduleContents, {extends: passDown.extends});
             }
 
             if (moduleContents.extends && Object.keys(moduleContents.extends).length) {
-                childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend, timestampsTmp);
+                childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend, cascadeDownTmp);
             }
 
             if (childrenModules.length) {
                 this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], {childrenModules});
             }
 
-
-            if (configPassDown.requires) {
-                moduleContents = _object.mergeWith(moduleContents, {requires: configPassDown.requires}, this.mergeConfig);
+            if (passDown.requires) {
+                moduleContents = _object.merge(moduleContents, {requires: passDown.requires});
             }
 
             if (moduleContents.requires && Object.keys(moduleContents.requires).length) {
-                this.buildModuleRequires(dbName, moduleContents.requires, tmpParentTableNamePrepend, timestampsTmp);
+                this.buildModuleRequires(dbName, moduleContents.requires, tmpParentTableNamePrepend, cascadeDownTmp);
             }
 
-            this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], {timestamps: timestampsTmp});
+            this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], cascadeDownTmp);
         }
     }
 
-    buildModuleExtends(dbName, configExtends, parentModule, parentTableNamePrepend, timestamps) {
+    buildModuleExtends(dbName, configExtends, parentModule, parentTableNamePrepend, cascadeDown) {
         if (!configExtends) {
             return;
         }
@@ -207,8 +236,6 @@ class SqlSchemaModulizer {
             
             let moduleName = moduleSplit[0], tableNamePrepend = moduleSplit[1];
 
-            let timestampsTmp = Object.assign({}, timestamps);
-
             if (parentModuleName) {
                 if (!tmpParentTableNamePrepend) {
                     tmpParentTableNamePrepend = parentModuleName;
@@ -226,8 +253,6 @@ class SqlSchemaModulizer {
             } else {
                 modulePrepended = module;
             }
-
-            let configPassDown = this.extractPassDownVariables(configExtends[module]);
             
             if (this.requires[dbName][modulePrepended]) {
                 this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], [configExtends[module], {parentModule}]);
@@ -239,85 +264,94 @@ class SqlSchemaModulizer {
 
             let moduleContents = loadJson(modulePath), childrenModules = [];
 
-            if (typeof moduleContents.timestamps !== "undefined") {
-                timestampsTmp = moduleContents.timestamps;
-            }
+            let cascadeDownTmp = this.extractCascadeDownVariables(moduleContents, cascadeDown);
 
-            if (configPassDown.extends) {
-                moduleContents = _object.mergeWith(moduleContents, {extends: configPassDown.extends}, this.mergeConfig);
+            let passDown = this.extractPassDownVariables(configExtends[module]);
+
+            if (passDown.extends) {
+                moduleContents = _object.merge(moduleContents, {extends: passDown.extends});
             }
 
             if (moduleContents.extends && Object.keys(moduleContents.extends).length) {
-                childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend, timestampsTmp);
+                childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend, cascadeDownTmp);
             }
 
             if (childrenModules.length) {
                 this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], {childrenModules});
             }
 
-            if (configPassDown.requires) {
-                moduleContents = _object.mergeWith(moduleContents, {requires: configPassDown.requires}, this.mergeConfig);
+            if (passDown.requires) {
+                moduleContents = _object.merge(moduleContents, {requires: passDown.requires});
             }
             
             if (moduleContents.requires && Object.keys(moduleContents.requires).length) {
-                this.buildModuleRequires(dbName, moduleContents.requires, tmpParentTableNamePrepend, timestampsTmp);
+                this.buildModuleRequires(dbName, moduleContents.requires, tmpParentTableNamePrepend, cascadeDownTmp);
             }
 
             retChildrenModules.push(modulePrepended);
 
-            this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], {timestamps: timestampsTmp});
+            this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], cascadeDownTmp);
         }
 
         return retChildrenModules;
     }    
 
     extractPassDownVariables(config) {
-        let configPassDown = {
+        let passDown = {
             requires: config.requires,
             extends: config.extends,
         };
 
-        if (configPassDown.requires) {
+        if (passDown.requires) {
             delete config.requires;
         }
         
-        if (configPassDown.extends) {
+        if (passDown.extends) {
             delete config.extends;
         }
         
-        return configPassDown;
+        return passDown;
+    }
+
+    extractCascadeDownVariables(moduleContents, cascadeDown) {
+        let cascadeDownTmp = Object.assign({}, cascadeDown);
+
+        for (let cascadeField in CASCADE_DOWN_FIELDS) {
+            if (typeof moduleContents[cascadeField] !== "undefined") {
+                cascadeDownTmp[cascadeField] = moduleContents[cascadeField];
+            }
+        }
+
+        return cascadeDownTmp;
     }
     
     buildModules(dbName, enable) {
         let tables = {}, moduleInfo = {}, tableInfo = {};
 
         for (let module in this.requires[dbName]) {
-            let opt = this.requires[dbName][module];
+            let opt = this.requires[dbName][module] || {};
             
-            let extendTables = {}, parentModule = null, childrenModules = null, timestamps;
+            let extendTables = {}, parentModule = null, childrenModules = null;
+            let cascadeVars = {};
             
-            if (opt) {
-                if (opt.tables) {
-                    extendTables = opt.tables;
-                }
-                
-                if (opt.parentModule) {
-                    parentModule = opt.parentModule;
-                }
-                
-                if (opt.childrenModules) {
-                    childrenModules = opt.childrenModules;
-                }
+            if (opt.tables) {
+                extendTables = opt.tables;
+            }
+            
+            if (opt.parentModule) {
+                parentModule = opt.parentModule;
+            }
+            
+            if (opt.childrenModules) {
+                childrenModules = opt.childrenModules;
+            }
 
-                if (typeof opt.timestamps !== "undefined") {
-                    timestamps = opt.timestamps;
+            for (let cascadeField in CASCADE_DOWN_FIELDS) {
+                if (typeof opt[cascadeField] !== "undefined") {
+                    cascadeVars[cascadeField] = opt[cascadeField];
                 }
             }
 
-            if (typeof timestamps === "undefined") {
-                throw new Error("timestamps object not found for " + dbName + " " + module);
-            }
-            
             let [moduleName, tableNamePrepend] = module.split(":");
             
             let modulePath = this.configDir + "/module" + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
@@ -360,9 +394,7 @@ class SqlSchemaModulizer {
                 
                 tables[tableName] = moduleContents.tables[table];
 
-                if (timestamps) {
-                    tables[tableName].timestamps = timestamps;
-                }
+                _object.merge(tables[tableName], cascadeVars);
                 
                 moduleInfo[module].assoc[table] = tableName;
                 
@@ -540,6 +572,31 @@ class SqlSchemaModulizer {
         }
     }
 
+    getDb() {
+        return this.db;
+    }
+
+    getDbSchema(dbName) {
+        if (!this.config[dbName]) {
+            throw new Error("dbName '" + dbName + "' not found in config");
+        }
+        
+        return this.db.getDbSchema(dbName, this.config[dbName]);
+    }
+
+    getTableSchema(dbName, tableName) {
+        if (!this.config[dbName]) {
+            throw new Error("dbName '" + dbName + "' not found in config");
+        }
+
+        if (!this.config[dbName].tables || !this.config[dbName].tables[tableName]) {
+            throw new Error("tableName '" + tableName + "' not found in config");
+        }
+
+        let tableConfig = this.config[dbName].tables[tableName];
+        
+        return this.db.getTableSchema(tableName, tableConfig);
+    }
 }
 
 module.exports = SqlSchemaModulizer;

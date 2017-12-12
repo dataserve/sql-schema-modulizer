@@ -1,5 +1,7 @@
 "use strict";
 
+const _object = require("lodash/object");
+
 class MySql {
 
     constructor() {
@@ -20,6 +22,10 @@ class MySql {
     }
     
     getTableSchema(tableName, tableConfig) {
+        let tableDefaults = tableConfig.tableDefaults;
+        
+        let fieldDefaults = tableConfig.fieldDefaults;
+        
         let fields = tableConfig.fields;
 
         let keys = tableConfig.keys;
@@ -35,7 +41,7 @@ class MySql {
         let defs = [];
         
         for (let field in fields) {
-            defs.push("  " + this.outputFieldSchema(field, fields[field]));
+            defs.push("  " + this.outputFieldSchema(field, fields[field], fieldDefaults));
         }
 
         if (timestamps) {
@@ -87,14 +93,34 @@ class MySql {
         }
         
         res = res.concat(defs);
-        
-        res.push(") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+
+        let close = [")"];
+
+        if (tableDefaults) {
+            if (tableDefaults.engine) {
+                close.push("ENGINE=" + tableDefaults.engine);
+            }
+
+            if (tableDefaults.charset) {
+                close.push("DEFAULT CHARSET=" + tableDefaults.charset);
+            }
+        }
+
+        res.push(close.join(" ") + ";");
         
         return res.join("\n")
     }
 
-    outputFieldSchema(field, config) {
+    outputFieldSchema(field, config, fieldDefaults) {
         let res = ["`" + field + "`"];
+
+        if (fieldDefaults && fieldDefaults[config.type]) {
+            let type = fieldDefaults[config.type].type;
+            
+            config = _object.merge({}, fieldDefaults[config.type], config);
+            
+            config.type = type;
+        }
         
         let [type, length] = config.type.split(":");
         
@@ -113,6 +139,7 @@ class MySql {
             break;
         case "string":
             if (!length) {
+
                 length = 255;
             }
             
@@ -123,6 +150,8 @@ class MySql {
             res.push("timestamp");
             
             break;
+        default:
+            throw new Error("Unknown type for field: " + field + " - " + type);
         }
         
         if (!config.nullable) {

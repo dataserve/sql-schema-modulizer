@@ -3,41 +3,31 @@
         "comment": {
             "fields": {
                 "id": {
-                    "type": "int",
-                    "key": "primary",
-                    "autoinc": true
+                    "type": "autoIncId"
                 },
                 "user_id": {
-                    "type": "int",
-                    "fillable": true
+                    "type": "int"
                 },
                 "$comment_guest_id": {
-                    "type": "int",
-                    "fillable": true
+                    "type": "int"
                 },
                 "path": {
-                    "type": "string",
-                    "fillable": true
+                    "type": "string"
                 },
                 "root_id": {
-                    "type": "int",
-                    "fillable": true
+                    "type": "int"
                 },
                 "parent_id": {
-                    "type": "int",
-                    "fillable": true
+                    "type": "int"
                 },
                 "level": {
-                    "type": "int",
-                    "fillable": true
+                    "type": "int"
                 },
                 "child_cnt": {
-                    "type": "int",
-                    "fillable": true
+                    "type": "int"
                 },
                 "comment": {
-                    "type": "string",
-                    "fillable": true
+                    "type": "string"
                 }
             },
             "relationships": {
@@ -50,17 +40,13 @@
         "comment_guest": {
             "fields": {
                 "id": {
-                    "type": "int",
-                    "key": "primary",
-                    "autoinc": true
+                    "type": "autoIncId"
                 },
                 "name": {
-                    "type": "string",
-                    "fillable": true
+                    "type": "string"
                 },
                 "url": {
-                    "type": "string",
-                    "fillable": true
+                    "type": "string"
                 }
             }
         }
