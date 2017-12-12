@@ -1,7 +1,6 @@
 {
     "tables": {
         "comment": {
-            "enabled": true,
             "fields": {
                 "id": {
                     "type": "int",
@@ -49,7 +48,6 @@
             }
         },
         "comment_guest": {
-            "enabled": false,
             "fields": {
                 "id": {
                     "type": "int",

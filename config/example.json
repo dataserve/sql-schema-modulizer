@@ -1,41 +1,9 @@
 {
-    "dataserve": {
+    "blog": {
+        "enable": "*",
         "requires": {
-            "comment": null,
-            "media:prepend": {
-                "extends": {
-                    "category": {
-                        "extends": {
-                            "comment": null
-                        },
-                        "tables": {
-                            "category_ref": {
-                                "fields": {
-                                    "^media_id": {
-                                        "type": "int",
-                                        "fillable": true,
-                                        "key": true
-                                    }
-                                },
-                                "keys": {
-                                    "ref_id": {
-                                        "type": "unique",
-                                        "fields": [
-                                            "$category_id",
-                                            "^media_id"
-                                        ]
-                                    }
-                                },
-                                "relationships": {
-                                    "belongsTo": [
-                                        "^media"
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            "blog": null,
+            "user": null
         }
     }
 }

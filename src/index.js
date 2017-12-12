@@ -33,18 +33,30 @@ class SqlSchemaModulizer {
             if (!this.requires[dbName]) {
                 this.requires[dbName] = {};
             }
+
+            let enable = null;
+            
+            if (this.config[dbName].enable) {
+                enable = "^" + this.config[dbName].enable.split("*").join(".*") + "$";
+            } else if (this.config[dbName].disable) {
+                enable = "^((?!" + this.config[dbName].disable.split("*").join(".*") + ").)*$";
+            }
+
+            if (enable) {
+                enable = new RegExp(enable, "i");
+            }
             
             if (this.config[dbName].requires && Object.keys(this.config[dbName].requires).length) {
                 this.buildModuleExtends(dbName, this.config[dbName].extends);
                 
                 this.buildModuleRequires(dbName, this.config[dbName].requires);
                 
-                this.buildModules(dbName);
+                this.buildModules(dbName, enable);
             }
             
             this.debug(this.requires, true);
 
-            this.debug(this.db.outputDbSchema(dbName, this.config[dbName]));
+            this.debug(this.db.getDbSchema(dbName, this.config[dbName]));
         }
     }
 
@@ -109,9 +121,11 @@ class SqlSchemaModulizer {
             let moduleContents = loadJson(modulePath), childrenModules = [];
 
             if (configPassDown.extends) {
+                console.log(moduleContents);
                 moduleContents = _object.mergeWith(moduleContents, {extends: configPassDown.extends}, this.mergeConfig);
+                console.log(moduleContents);
             }
-            
+
             if (moduleContents.extends && Object.keys(moduleContents.extends).length) {
                 childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend);
             }
@@ -176,15 +190,20 @@ class SqlSchemaModulizer {
 
             let modulePath = this.configDir + "/module" + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
 
-            let moduleContents = loadJson(modulePath);
+            let moduleContents = loadJson(modulePath), childrenModules = [];
 
             if (configPassDown.extends) {
                 moduleContents = _object.mergeWith(moduleContents, {extends: configPassDown.extends}, this.mergeConfig);
             }
 
             if (moduleContents.extends && Object.keys(moduleContents.extends).length) {
-                this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend);
+                childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend);
             }
+
+            if (childrenModules.length) {
+                this.requires[dbName][modulePrepended] = _object.merge(this.requires[dbName][modulePrepended], {childrenModules});
+            }
+
 
             if (configPassDown.requires) {
                 moduleContents = _object.mergeWith(moduleContents, {requires: configPassDown.requires}, this.mergeConfig);
@@ -213,23 +232,15 @@ class SqlSchemaModulizer {
         return configPassDown;
     }
     
-    buildModules(dbName) {
+    buildModules(dbName, enable) {
         let tables = {}, moduleInfo = {}, tableInfo = {};
-        
+
         for (let module in this.requires[dbName]) {
             let opt = this.requires[dbName][module];
             
-            let enable = [], extendTables = {}, parentModule = null, childrenModules = null;
+            let extendTables = {}, parentModule = null, childrenModules = null;
             
             if (opt) {
-                if (opt.enable) {
-                    if (!Array.isArray(opt.enable)) {
-                        enable = [opt.enable];
-                    } else {
-                        enable = opt.enable;
-                    }
-                }
-                
                 if (opt.tables) {
                     extendTables = opt.tables;
                 }
@@ -265,18 +276,16 @@ class SqlSchemaModulizer {
             };
 
             for (let table in moduleContents.tables) {
-                if (typeof moduleContents.tables[table].enabled !== "undefined"
-                    && !moduleContents.tables[table].enabled
-                    && enable.indexOf(table) === -1) {
-                    continue;
-                }
-                
                 let tableName = table;
                 
                 if (tableNamePrepend) {
                     tableName = tableNamePrepend + "_" + tableName;
                 }
-                
+
+                if (enable && !tableName.match(enable)) {
+                    continue;
+                }
+
                 if (!tableInfo[tableName]) {
                     tableInfo[tableName] = {
                         parentModule: parentModule,
@@ -350,7 +359,7 @@ class SqlSchemaModulizer {
         siblingTables = tmpSiblingTables;
 
         let tmpChildrenTables = {};
-        
+
         for (let table in childrenTables) {
             tmpChildrenTables[">" + table] = childrenTables[table];
         }

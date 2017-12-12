@@ -3,7 +3,7 @@
 class MySql {
 
     constructor() {
-        this.timestamps = {
+        this.timestampsDefault = {
             modified: {
                 name: "mtime",
                 type: "timestamp",
@@ -20,15 +20,7 @@ class MySql {
         };
     }
 
-    outputDbSchema(dbName, dbConfig) {
-        return this.getDbSchema(dbName, dbConfig);
-    }
-
-    outputTableSchema(tableName, tableConfig, timestamps) {
-        return this.getTableSchema(tableName, tableConfig, timestamps);
-    }
-
-    getDbSchema(dbName, dbConfig) {
+    getDbSchema(dbName, dbConfig, timestamps) {
         let tables = dbConfig.tables;
         
         let tablesSorted = Object.keys(tables).sort();
@@ -36,8 +28,6 @@ class MySql {
         let res = [];
         
         for (let tableName of tablesSorted) {
-            let timestamps = this.timestamps;
-            
             res.push(this.getTableSchema(tableName, tables[tableName], timestamps));
         }
         
@@ -46,6 +36,8 @@ class MySql {
     
     getTableSchema(tableName, tableConfig, timestamps) {
         let fields = tableConfig.fields;
+
+        timestamps = typeof timestamps === "undefined" ? this.timestampsDefault : timestamps;
         
         let keys = tableConfig.keys;
 
