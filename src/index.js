@@ -54,10 +54,36 @@ class SqlSchemaModulizer {
                 this.buildModules(dbName, enable);
             }
             
-            this.debug(this.requires, true);
+            //this.debug(this.requires, true);
 
-            this.debug(this.db.getDbSchema(dbName, this.config[dbName]));
+            //this.debug(this.db.getDbSchema(dbName, this.config[dbName]));
         }
+    }
+
+    getDb() {
+        return this.db;
+    }
+
+    getDbSchema(dbName) {
+        if (!this.config[dbName]) {
+            throw new Error("dbName '" + dbName + "' not found in config");
+        }
+        
+        return this.db.getDbSchema(dbName, this.config[dbName]);
+    }
+
+    getTableSchema(dbName, tableName) {
+        if (!this.config[dbName]) {
+            throw new Error("dbName '" + dbName + "' not found in config");
+        }
+
+        if (!this.config[dbName].tables || !this.config[dbName].tables[tableName]) {
+            throw new Error("tableName '" + tableName + "' not found in config");
+        }
+
+        let tableConfig = this.config[dbName].tables[tableName];
+        
+        return this.db.getTableSchema(tableName, tableConfig);
     }
 
     buildModuleExtends(dbName, configExtends, parentModule, parentTableNamePrepend) {
