@@ -214,7 +214,7 @@ CREATE TABLE `prepend_video_comment` (
 View the example [config/example.json](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/example.json) file for reference.
 
 ### Define data tables using pre-defined modules
-View the example [config/exampleBlog.json](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/exampleBlog.json) which generates the entire model layer for a blog using common modules. The [`mobuleBlog`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleBlog.json) module extends and imports: [`moduleComment`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleComment.json), [`moduleCategory`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleCategory.json), [`moduleMedia`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleMedia.json), and [`moduleUser`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleUser.json). Some are used more than once for different reasons. For example the [`moduleMedia`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleMedia.json) module is built into three separate tables which are used for different cases: media inside blog posts, media inside comments to the blog, and user profile images for blog post authors and blog post commenters.
+View the example [`config/exampleBlog.json`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/exampleBlog.json) which generates the entire model layer for a blog using common modules. The [`mobuleBlog`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleBlog.json) module extends and imports: [`moduleComment`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleComment.json), [`moduleCategory`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleCategory.json), [`moduleMedia`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleMedia.json), and [`moduleUser`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleUser.json). Some are used more than once for different reasons. For example the [`moduleMedia`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleMedia.json) module is built into three separate tables which are used for different cases: media inside blog posts, media inside comments to the blog, and user profile images for blog post authors and blog post commenters.
 
 ## Configuration JSON Syntax
 There are two types of configuration styles. One defines all your tables directly, the other uses modules to extend common functionality via "sub-systems".
@@ -270,7 +270,7 @@ This is used to "extend" the functionality of a module. Modules extended can ref
 ```
 
 #### `<module object>`
-This is used to specify a module. It can be in it's own file (config/module[ModuleName].json) - or passed into the modulizer as a javascript object.
+This is used to specify a module. It can be in it's own file `config/module[ModuleName].json` - or passed into the modulizer as a javascript object.
 
 ```javascript
 {
@@ -321,16 +321,16 @@ You can use this to create custom field type "macros". When this is placed in th
 
 ```javascript
 {
-    autoIncId: {
-        type: "int",
-        key: "primary",
-        autoInc: true,
-        unsigned: true
+    "autoIncId": {
+        "type": "int",
+        "key": "primary",
+        "autoInc": true,
+        "unsigned": true
     },
-    string: {
-        type: "string:255",
-        default: ""
-    },
+    "string": {
+        "type": "string:255",
+        "default": ""
+    }
 }
 ```
 
