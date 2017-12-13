@@ -75,7 +75,7 @@ let moduleConfig = {
             "media": {
                 "fields": {
                     "id": "autoIncId",
-                    "filename": "string:256",
+                    "filename": "string:255",
                     "mime": "string:128",
                     ">comment_cnt": "int"
                 }
@@ -88,7 +88,7 @@ let moduleConfig = {
                 "fields": {
                     "id": "autoIncId",
                     "name": "string:128",
-                    "url": "string:256"
+                    "url": "string:255"
                 }
             }
         }
@@ -128,7 +128,7 @@ CREATE DATABASE dbName;
 
 CREATE TABLE `audio` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `filename` varchar(256) NOT NULL DEFAULT '',
+  `filename` varchar(255) NOT NULL DEFAULT '',
   `mime` varchar(128) NOT NULL DEFAULT '',
   `audio_comment_cnt` int NOT NULL DEFAULT '0',
   `mtime` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
@@ -153,7 +153,7 @@ CREATE TABLE `audio_comment` (
 CREATE TABLE `comment_guest` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(128) NOT NULL DEFAULT '',
-  `url` varchar(256) NOT NULL DEFAULT '',
+  `url` varchar(255) NOT NULL DEFAULT '',
   `mtime` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
   `ctime` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY (`id`)
@@ -161,7 +161,7 @@ CREATE TABLE `comment_guest` (
 
 CREATE TABLE `photo` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `filename` varchar(256) NOT NULL DEFAULT '',
+  `filename` varchar(255) NOT NULL DEFAULT '',
   `mime` varchar(128) NOT NULL DEFAULT '',
   `photo_comment_cnt` int NOT NULL DEFAULT '0',
   `mtime` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
@@ -185,7 +185,7 @@ CREATE TABLE `photo_comment` (
 
 CREATE TABLE `prepend_video` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `filename` varchar(256) NOT NULL DEFAULT '',
+  `filename` varchar(255) NOT NULL DEFAULT '',
   `mime` varchar(128) NOT NULL DEFAULT '',
   `prepend_video_comment_cnt` int NOT NULL DEFAULT '0',
   `mtime` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
