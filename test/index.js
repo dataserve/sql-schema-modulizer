@@ -5,7 +5,9 @@ const SqlSchemaModulizer = require("../index");
 describe("SqlSchemaModulizer Tests", function() {
     it("Example Blog Table Names", function(done) {
         try {
-            const modulizer = new SqlSchemaModulizer("../config/exampleBlog");
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromPath("../config/exampleBlog");
 
             const dbName = "blog";
             
@@ -56,10 +58,7 @@ describe("SqlSchemaModulizer Tests", function() {
                                 "autoInc": true,
                                 "key": "primary",
                             },
-                            "key": {
-                                "type": "string:20",
-                                "key": true,
-                            },
+                            "key": "string:20",
                         },
                     },
                 },
@@ -67,8 +66,10 @@ describe("SqlSchemaModulizer Tests", function() {
         };
         
         try {
-            const modulizer = new SqlSchemaModulizer(config);
+            const modulizer = new SqlSchemaModulizer();
 
+            modulizer.buildFromObject(config);
+            
             let dbSql = modulizer.getDbSchema(dbName);
 
             done();

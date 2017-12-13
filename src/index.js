@@ -54,16 +54,12 @@ function loadJson(path) {
 
 class SqlSchemaModulizer {
 
-    constructor(configPath, dbType) {
-        if (Type.is(configPath, Object)) {
-            this.configDir = __dirname;
-            
-            this.config = configPath;
-        } else {
-            this.configDir = path.dirname(configPath);
+    constructor(dbType) {
+        this.config = {};
 
-            this.config = loadJson(configPath);
-        }
+        this.configDir = null;
+
+        this.modules = {};
 
         this.requires = {};
 
@@ -75,11 +71,44 @@ class SqlSchemaModulizer {
         switch (dbType.toLowerCase()) {
         case "mysql":
             this.db = new MySql();
+            
             break;
         default:
             throw new Error("dbType not supported");
         }
+    }
 
+    buildFromPath(configPath) {
+        this.configDir = path.dirname(configPath);
+        
+        this.config = loadJson(configPath);
+
+        this.build();
+    }
+
+    buildFromObject(config, modules) {
+        this.config = config || {};
+
+        this.modules = modules || {};
+
+        this.build();
+    }
+
+    getModule(moduleName) {
+        if (this.modules[moduleName]) {
+            return this.modules[moduleName];
+        }
+
+        if (this.configDir) {
+            let modulePath = this.configDir + "/module" + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+
+            return loadJson(modulePath);
+        }
+
+        throw new Error("module not found: " + moduleName);
+    }
+
+    build() {
         for (let dbName in this.config) {
             if (!this.requires[dbName]) {
                 this.requires[dbName] = {};
@@ -174,9 +203,7 @@ class SqlSchemaModulizer {
                 this.requires[dbName][modulePrepended] = configRequires[module];
             }
 
-            let modulePath = this.configDir + "/module" + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
-
-            let moduleContents = loadJson(modulePath), childrenModules = [];
+            let moduleContents = this.getModule(moduleName), childrenModules = [];
 
             let cascadeDownTmp = this.extractCascadeDownVariables(moduleContents, cascadeDown);
 
@@ -260,9 +287,7 @@ class SqlSchemaModulizer {
                 this.requires[dbName][modulePrepended] = _object.merge(configExtends[module], {parentModule});
             }
 
-            let modulePath = this.configDir + "/module" + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
-
-            let moduleContents = loadJson(modulePath), childrenModules = [];
+            let moduleContents = this.getModule(moduleName), childrenModules = [];
 
             let cascadeDownTmp = this.extractCascadeDownVariables(moduleContents, cascadeDown);
 
@@ -386,8 +411,8 @@ class SqlSchemaModulizer {
 
                 if (!tableInfo[tableName]) {
                     tableInfo[tableName] = {
-                        parentModule: parentModule,
-                        childrenModules: childrenModules,
+                        parentModule,
+                        childrenModules,
                         siblingsAssoc: {},
                     };
                 }

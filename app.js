@@ -27,7 +27,9 @@ cli.command("sql <dbName> [<tableName>]")
             process.exit(1);
         }
 
-        const modulizer = new SqlSchemaModulizer(resolve(cli.config), cli.db);
+        const modulizer = new SqlSchemaModulizer(cli.db);
+
+        modulizer.buildFromPath(cli.config);
 
         try {
             if (!tableName) {

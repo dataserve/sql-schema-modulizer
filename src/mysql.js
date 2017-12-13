@@ -13,6 +13,8 @@ class MySql {
         let tablesSorted = Object.keys(tables).sort();
         
         let res = [];
+
+        res.push("CREATE DATABASE " + dbName + ";");
         
         for (let tableName of tablesSorted) {
             res.push(this.getTableSchema(tableName, tables[tableName]));
@@ -83,7 +85,7 @@ class MySql {
         for (let i in defs) {
             let comma = ",";
             
-            if (cnt == (len - 1)) {
+            if (cnt === (len - 1)) {
                 comma = "";
             }
             
@@ -108,11 +110,17 @@ class MySql {
 
         res.push(close.join(" ") + ";");
         
-        return res.join("\n")
+        return res.join("\n");
     }
 
     outputFieldSchema(field, config, fieldDefaults) {
         let res = ["`" + field + "`"];
+
+        if (typeof config === "string") {
+            config = {
+                "type": config,
+            };
+        }
 
         if (fieldDefaults && fieldDefaults[config.type]) {
             let type = fieldDefaults[config.type].type;
