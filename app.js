@@ -29,7 +29,7 @@ cli.command("sql <dbName> [<tableName>]")
 
         const modulizer = new SqlSchemaModulizer(cli.db);
 
-        modulizer.buildFromPath(cli.config);
+        modulizer.buildFromPath(resolve(cli.config));
 
         try {
             if (!tableName) {

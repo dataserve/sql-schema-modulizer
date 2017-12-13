@@ -94,7 +94,9 @@ class SqlSchemaModulizer {
         this.build();
     }
 
-    getModule(moduleName) {
+    getModuleContents(moduleName) {
+        moduleName = moduleName.split("|")[0];
+        
         if (this.modules[moduleName]) {
             return this.modules[moduleName];
         }
@@ -183,7 +185,7 @@ class SqlSchemaModulizer {
 
             if (tableNamePrepend) {
                 if (!tmpParentTableNamePrepend) {
-                    tmpParentTableNamePrepend= "";
+                    tmpParentTableNamePrepend = "";
                 } else {
                     tmpParentTableNamePrepend += "_";
                 }
@@ -203,7 +205,7 @@ class SqlSchemaModulizer {
                 this.requires[dbName][modulePrepended] = configRequires[module];
             }
 
-            let moduleContents = this.getModule(moduleName), childrenModules = [];
+            let moduleContents = this.getModuleContents(moduleName), childrenModules = [];
 
             let cascadeDownTmp = this.extractCascadeDownVariables(moduleContents, cascadeDown);
 
@@ -241,13 +243,9 @@ class SqlSchemaModulizer {
         let parentModuleName, parentTableName;
         
         if (parentModule) {
-            let parentModuleSplit = parentModule.split(":");
-            
-            parentModuleName = parentModuleSplit[0];
+            let parentModuleSplit = parentModule.split(":")[0].split("|");
 
-            //DO NOT UNCOMMENT: below is relative, arg passed in
-            //                  above is resolved absolute path
-            //parentTableNamePrepend = parentModuleSplit[1];
+            parentModuleName = parentModuleSplit[1] ? parentModuleSplit[1] : parentModuleSplit[0];
         }
         
         let retChildrenModules = [];
@@ -287,7 +285,7 @@ class SqlSchemaModulizer {
                 this.requires[dbName][modulePrepended] = _object.merge(configExtends[module], {parentModule});
             }
 
-            let moduleContents = this.getModule(moduleName), childrenModules = [];
+            let moduleContents = this.getModuleContents(moduleName), childrenModules = [];
 
             let cascadeDownTmp = this.extractCascadeDownVariables(moduleContents, cascadeDown);
 
@@ -378,10 +376,14 @@ class SqlSchemaModulizer {
             }
 
             let [moduleName, tableNamePrepend] = module.split(":");
-            
-            let modulePath = this.configDir + "/module" + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
-            
-            let moduleContents = loadJson(modulePath);
+
+            let moduleNameSplit = moduleName.split("|");
+
+            moduleName = moduleNameSplit[0];
+
+            let updatedTableName = moduleNameSplit[1] ? moduleNameSplit[1] : moduleName;
+
+            let moduleContents = this.getModuleContents(moduleName);
             
             if (!moduleContents.tables || !Object.keys(moduleContents.tables).length) {
                 continue;
@@ -400,6 +402,10 @@ class SqlSchemaModulizer {
 
             for (let table in moduleContents.tables) {
                 let tableName = table;
+
+                if (updatedTableName) {
+                    tableName = tableName.replace(moduleName, updatedTableName);
+                }
                 
                 if (tableNamePrepend) {
                     tableName = tableNamePrepend + "_" + tableName;
