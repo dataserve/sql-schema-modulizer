@@ -8,7 +8,7 @@ const util = require("util");
 
 const MySql = require("./mysql");
 
-const DEBUG = true;
+const DEBUG = false;
 
 const TABLE_DEFAULTS = {
     charset: "utf8",
@@ -167,6 +167,7 @@ class SqlSchemaModulizer {
         }
     }
 
+    // this is a recursive function, along with buildModuleExtends()
     buildModuleRequires(dbName, configRequires, parentTableNamePrepend, cascadeDown) {
         if (!configRequires) {
             return;
@@ -182,6 +183,8 @@ class SqlSchemaModulizer {
             let moduleSplit = module.split(":"), modulePrepended = null;
             
             let moduleName = moduleSplit[0], tableNamePrepend = moduleSplit[1];
+
+            let moduleNameSplit = moduleName.split("|");
 
             if (tableNamePrepend) {
                 if (!tmpParentTableNamePrepend) {
@@ -209,12 +212,22 @@ class SqlSchemaModulizer {
 
             let cascadeDownTmp = this.extractCascadeDownVariables(moduleContents, cascadeDown);
 
+            let passThruTableName = null;
+            
             let passDown = this.extractPassDownVariables(configRequires[module]);
             
             if (passDown.extends) {
                 moduleContents = _object.merge(moduleContents, {extends: passDown.extends});
             }
 
+            // is this a "pass-thru" module? aka tableless
+            // -- if so, need to pass along "passThruTableName" value
+            if (!configRequires[module].tables && moduleNameSplit[1]) {
+                passThruTableName = moduleNameSplit[1];
+
+                this.setPassThruTableName(passThruTableName, moduleContents);
+            }
+            
             if (moduleContents.extends && Object.keys(moduleContents.extends).length) {
                 childrenModules = this.buildModuleExtends(dbName, moduleContents.extends, modulePrepended, tmpParentTableNamePrepend, cascadeDownTmp);
             }
@@ -235,6 +248,7 @@ class SqlSchemaModulizer {
         }
     }
 
+    // this is a recursive function, along with buildModuleRequires()
     buildModuleExtends(dbName, configExtends, parentModule, parentTableNamePrepend, cascadeDown) {
         if (!configExtends) {
             return;
@@ -249,7 +263,7 @@ class SqlSchemaModulizer {
         }
         
         let retChildrenModules = [];
-        
+
         for (let module in configExtends) {
             if (!configExtends[module]) {
                 configExtends[module] = {};
@@ -319,7 +333,31 @@ class SqlSchemaModulizer {
         return retChildrenModules;
     }    
 
-    extractPassDownVariables(config) {
+    setPassThruTableName(passThruTableName, moduleContents) {
+        for (let field of ["extends", "requires"]) {
+            for (let module in moduleContents[field]) {
+                let moduleSplit = module.split(":");
+                
+                let moduleName = moduleSplit[0], tableNamePrepend = moduleSplit[1];
+
+                let moduleNameSplit = moduleName.split("|");
+
+                moduleName = moduleNameSplit[0];
+
+                let newModuleName = moduleName + "|" + passThruTableName;
+
+                if (tableNamePrepend) {
+                    newModuleName += ":" + tableNamePrepend;
+                }
+
+                moduleContents[field][newModuleName] = moduleContents[field][module];
+
+                delete moduleContents[field][module];
+            }
+        }
+    }
+    
+    extractPassDownVariables(config, passThruTableName) {
         let passDown = {
             requires: config.requires,
             extends: config.extends,
@@ -390,7 +428,7 @@ class SqlSchemaModulizer {
             }
   
             if (extendTables) {
-                moduleContents.tables = _object.mergeWith(moduleContents.tables, extendTables, this.mergeConfig);
+                moduleContents.tables = _object.merge(moduleContents.tables, extendTables);
             }
 
             let siblingsAssoc = {}, moduleTables = [];
@@ -468,7 +506,7 @@ class SqlSchemaModulizer {
                 this.config[dbName].tables = {};
             }
 
-            this.config[dbName].tables = _object.mergeWith(this.config[dbName].tables, tables, this.mergeConfig);
+            this.config[dbName].tables = _object.merge(this.config[dbName].tables, tables);
         }
     }
 
@@ -574,24 +612,6 @@ class SqlSchemaModulizer {
         return str;
     }
     
-    mergeConfig(objValue, srcValue) {
-        if (typeof objValue !== "undefined" && !Type.is(objValue, Object) && !Array.isArray(objValue)) {
-            objValue = [objValue];
-        }
-        
-        if (typeof srcValue !== "undefined" && !Type.is(srcValue, Object) && !Array.isArray(srcValue)) {
-            srcValue = [srcValue];
-        }
-        
-        if (Array.isArray(objValue)) {
-            if (!Array.isArray(srcValue)) {
-                srcValue = [srcValue];
-            }
-            
-            return _array.uniq(objValue.concat(srcValue));
-        }
-    }
-
     debug(arg, isInspect) {
         if (!DEBUG) {
             return;

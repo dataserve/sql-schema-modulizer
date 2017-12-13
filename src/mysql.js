@@ -129,7 +129,7 @@ class MySql {
             
             config.type = type;
         }
-        
+
         let [type, length] = config.type.split(":");
         
         switch (type) {
