@@ -57,7 +57,7 @@ const SqlSchemaModulizer = require("sql-schema-modulizer");
 
 let dbConfig = {
     "dbName": {
-        "requires": {
+        "imports": {
             "commentGuest": null,
             "mediaWithComment|audio": null,
             "mediaWithComment|photo": null,
@@ -214,7 +214,7 @@ CREATE TABLE `prepend_video_comment` (
 View the example [config/example.json](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/example.json) file for reference.
 
 ### Define data tables using pre-defined modules
-View the example [config/exampleBlog.json](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/exampleBlog.json) which generates the entire model layer for a blog using common modules. The [`mobuleBlog`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleBlog.json) module extends and requires: [`moduleComment`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleComment.json), [`moduleCategory`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleCategory.json), [`moduleMedia`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleMedia.json), and [`moduleUser`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleUser.json). Some are used more than once for different reasons. For example the [`moduleMedia`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleMedia.json) module is built into three separate tables which are used for different cases: media inside blog posts, media inside comments to the blog, and user profile images for blog post authors and blog post commenters.
+View the example [config/exampleBlog.json](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/exampleBlog.json) which generates the entire model layer for a blog using common modules. The [`mobuleBlog`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleBlog.json) module extends and imports: [`moduleComment`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleComment.json), [`moduleCategory`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleCategory.json), [`moduleMedia`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleMedia.json), and [`moduleUser`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleUser.json). Some are used more than once for different reasons. For example the [`moduleMedia`](https://github.com/dataserve/sql-schema-modulizer/blob/master/config/moduleMedia.json) module is built into three separate tables which are used for different cases: media inside blog posts, media inside comments to the blog, and user profile images for blog post authors and blog post commenters.
 
 ## Configuration JSON Syntax
 There are two types of configuration styles. One defines all your tables directly, the other uses modules to extend common functionality via "sub-systems".
@@ -234,7 +234,7 @@ There are two types of configuration styles. One defines all your tables directl
   "enable": <enable string match>,
   "disable": <!(enable string match)>,
   "tables": <tables object>,
-  "requires": <requires object>,
+  "imports": <imports object>,
   "tableDefaults": <cascading tableDefaults object>,
   "timestamps": <cascading timestamps object>,
   "fieldDefaults": <cascading fieldDefaults object>
@@ -261,14 +261,9 @@ This is used to "import" a module into the current dependency tree. It acts as a
 
 ```javascript
 {
-  "<moduleName>(|<alternativeName>)(:<namespace>)": {
-    "extends": <extends object>,
-    "requires": <requires object>,
-    "tableDefaults": <cascading tableDefaults object>,
-    "timestamps": <cascading timestamps object>,
-    "fieldDefaults": <cascading fieldDefaults object>,
-    "tables": <tables object>
-  }
+  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object>,
+  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object>,
+  ...
 }
 ```
 
@@ -277,9 +272,20 @@ This is used to "extend" the functionality of a module. Modules extended can ref
 
 ```javascript
 {
-  "<parentModuleName>(:<namespace>)": {
+  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object>,
+  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object>,
+  ...
+}
+```
+
+#### `<module object>`
+This is used to specify a module. It can be in it's own file (config/module[ModuleName].json) - or passed into the modulizer as a javascript object.
+
+```javascript
+{
+  "<moduleName>": {
     "extends": <extends object>,
-    "requires": <requires object>,
+    "imports": <imports object>,
     "tableDefaults": <cascading tableDefaults object>,
     "timestamps": <cascading timestamps object>,
     "fieldDefaults": <cascading fieldDefaults object>,

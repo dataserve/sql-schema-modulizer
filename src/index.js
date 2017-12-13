@@ -63,7 +63,7 @@ class SqlSchemaModulizer {
 
         this.modules = {};
 
-        this.requires = {};
+        this.tree = {};
 
         this.built = false;
 
@@ -124,8 +124,8 @@ class SqlSchemaModulizer {
 
     build() {
         for (let dbName in this.config) {
-            if (!this.requires[dbName]) {
-                this.requires[dbName] = {};
+            if (!this.tree[dbName]) {
+                this.tree[dbName] = {};
             }
 
             let enable = null;
@@ -151,13 +151,13 @@ class SqlSchemaModulizer {
                 this.buildTables(dbName, cascadeDown);
             }
 
-            if (this.config[dbName].requires && Object.keys(this.config[dbName].requires).length) {
-                this.buildModuleRequires(dbName, this.config[dbName].requires, null, cascadeDown);
+            if (this.config[dbName].imports && Object.keys(this.config[dbName].imports).length) {
+                this.buildModuleImports(dbName, this.config[dbName].imports, null, cascadeDown);
 
                 this.buildModules(dbName, enable);
             }
             
-            //this.debug(this.requires, true);
+            //this.debug(this.tree, true);
 
             //this.debug(this.db.getDbSchema(dbName, this.config[dbName]));
         }
@@ -182,14 +182,14 @@ class SqlSchemaModulizer {
     }
 
     // this is a recursive function, along with buildModuleExtends()
-    buildModuleRequires(dbName, configRequires, parentTableNamePrepend, cascadeDown) {
-        if (!configRequires) {
+    buildModuleImports(dbName, config, parentTableNamePrepend, cascadeDown) {
+        if (!config) {
             return;
         }
         
-        for (let module in configRequires) {
-            if (!configRequires[module]) {
-                configRequires[module] = {};
+        for (let module in config) {
+            if (!config[module]) {
+                config[module] = {};
             }
 
             let tmpParentTableNamePrepend = parentTableNamePrepend;
@@ -216,10 +216,10 @@ class SqlSchemaModulizer {
                 modulePrepended = module;
             }
 
-            if (this.requires[dbName][modulePrepended]) {
-                _object.merge(this.requires[dbName][modulePrepended], configRequires[module]);
+            if (this.tree[dbName][modulePrepended]) {
+                _object.merge(this.tree[dbName][modulePrepended], config[module]);
             } else {
-                this.requires[dbName][modulePrepended] = configRequires[module];
+                this.tree[dbName][modulePrepended] = config[module];
             }
 
             let moduleContents = this.getModuleContents(moduleName), childrenModules = [];
@@ -228,7 +228,7 @@ class SqlSchemaModulizer {
 
             let passThruTableName = null;
             
-            let passDown = this.extractPassDownVariables(configRequires[module]);
+            let passDown = this.extractPassDownVariables(config[module]);
             
             if (passDown.extends) {
                 _object.merge(moduleContents, {extends: passDown.extends});
@@ -236,7 +236,7 @@ class SqlSchemaModulizer {
 
             // is this a "pass-thru" module? aka tableless
             // -- if so, need to pass along "passThruTableName" value
-            if (parentTableNamePrepend && !configRequires[module].tables && moduleNameSplit[1]) {
+            if (parentTableNamePrepend && !config[module].tables && moduleNameSplit[1]) {
                 passThruTableName = moduleNameSplit[1];
 
                 this.setPassThruTableName(passThruTableName, moduleContents);
@@ -247,24 +247,24 @@ class SqlSchemaModulizer {
             }
 
             if (childrenModules.length) {
-                _object.merge(this.requires[dbName][modulePrepended], {childrenModules});
+                _object.merge(this.tree[dbName][modulePrepended], {childrenModules});
             }
 
-            if (passDown.requires) {
-                _object.merge(moduleContents, {requires: passDown.requires});
+            if (passDown.imports) {
+                _object.merge(moduleContents, {imports: passDown.imports});
             }
 
-            if (moduleContents.requires && Object.keys(moduleContents.requires).length) {
-                this.buildModuleRequires(dbName, moduleContents.requires, tmpParentTableNamePrepend, cascadeDownTmp);
+            if (moduleContents.imports && Object.keys(moduleContents.imports).length) {
+                this.buildModuleImports(dbName, moduleContents.imports, tmpParentTableNamePrepend, cascadeDownTmp);
             }
 
-            _object.merge(this.requires[dbName][modulePrepended], cascadeDownTmp);
+            _object.merge(this.tree[dbName][modulePrepended], cascadeDownTmp);
         }
     }
 
-    // this is a recursive function, along with buildModuleRequires()
-    buildModuleExtends(dbName, configExtends, parentModule, parentTableNamePrepend, cascadeDown) {
-        if (!configExtends) {
+    // this is a recursive function, along with buildModuleImports()
+    buildModuleExtends(dbName, config, parentModule, parentTableNamePrepend, cascadeDown) {
+        if (!config) {
             return;
         }
 
@@ -278,9 +278,9 @@ class SqlSchemaModulizer {
         
         let retChildrenModules = [];
 
-        for (let module in configExtends) {
-            if (!configExtends[module]) {
-                configExtends[module] = {};
+        for (let module in config) {
+            if (!config[module]) {
+                config[module] = {};
             }
 
             let tmpParentTableNamePrepend = parentTableNamePrepend;
@@ -307,17 +307,17 @@ class SqlSchemaModulizer {
                 modulePrepended = module;
             }
             
-            if (this.requires[dbName][modulePrepended]) {
-                _object.merge(this.requires[dbName][modulePrepended], configExtends[module], {parentModule});
+            if (this.tree[dbName][modulePrepended]) {
+                _object.merge(this.tree[dbName][modulePrepended], config[module], {parentModule});
             } else {
-                this.requires[dbName][modulePrepended] = _object.merge({}, configExtends[module], {parentModule});
+                this.tree[dbName][modulePrepended] = _object.merge({}, config[module], {parentModule});
             }
 
             let moduleContents = this.getModuleContents(moduleName), childrenModules = [];
 
             let cascadeDownTmp = this.extractCascadeDownVariables(moduleContents, cascadeDown);
 
-            let passDown = this.extractPassDownVariables(configExtends[module]);
+            let passDown = this.extractPassDownVariables(config[module]);
 
             if (passDown.extends) {
                 _object.merge(moduleContents, {extends: passDown.extends});
@@ -328,27 +328,27 @@ class SqlSchemaModulizer {
             }
 
             if (childrenModules.length) {
-                _object.merge(this.requires[dbName][modulePrepended], {childrenModules});
+                _object.merge(this.tree[dbName][modulePrepended], {childrenModules});
             }
 
-            if (passDown.requires) {
-                _object.merge(moduleContents, {requires: passDown.requires});
+            if (passDown.imports) {
+                _object.merge(moduleContents, {imports: passDown.imports});
             }
             
-            if (moduleContents.requires && Object.keys(moduleContents.requires).length) {
-                this.buildModuleRequires(dbName, moduleContents.requires, tmpParentTableNamePrepend, cascadeDownTmp);
+            if (moduleContents.imports && Object.keys(moduleContents.imports).length) {
+                this.buildModuleImports(dbName, moduleContents.imports, tmpParentTableNamePrepend, cascadeDownTmp);
             }
 
             retChildrenModules.push(modulePrepended);
 
-            _object.merge(this.requires[dbName][modulePrepended], cascadeDownTmp);
+            _object.merge(this.tree[dbName][modulePrepended], cascadeDownTmp);
         }
 
         return retChildrenModules;
     }    
 
     setPassThruTableName(passThruTableName, moduleContents) {
-        for (let field of ["extends", "requires"]) {
+        for (let field of ["extends", "imports"]) {
             for (let module in moduleContents[field]) {
                 let moduleSplit = module.split(":");
                 
@@ -373,12 +373,12 @@ class SqlSchemaModulizer {
     
     extractPassDownVariables(config, passThruTableName) {
         let passDown = {
-            requires: config.requires,
+            imports: config.imports,
             extends: config.extends,
         };
 
-        if (passDown.requires) {
-            delete config.requires;
+        if (passDown.imports) {
+            delete config.imports;
         }
         
         if (passDown.extends) {
@@ -403,8 +403,8 @@ class SqlSchemaModulizer {
     buildModules(dbName, enable) {
         let tables = {}, moduleInfo = {}, tableInfo = {};
 
-        for (let module in this.requires[dbName]) {
-            let opt = this.requires[dbName][module] || {};
+        for (let module in this.tree[dbName]) {
+            let opt = this.tree[dbName][module] || {};
             
             let extendTables = {}, parentModule = null, childrenModules = null;
             let cascadeVars = {};

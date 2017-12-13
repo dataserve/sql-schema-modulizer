@@ -1,7 +1,7 @@
 {
     "blog": {
         "enable": "*",
-        "requires": {
+        "imports": {
             "blog": null,
             "user": null
         }
