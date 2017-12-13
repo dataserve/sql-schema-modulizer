@@ -35,10 +35,12 @@ const FIELD_DEFAULTS = {
     autoIncId: {
         type: "int",
         key: "primary",
-        autoInc: true
+        autoInc: true,
+        unsigned: true
     },
     string: {
         type: "string:255",
+        default: ""
     },
 };
 
@@ -234,7 +236,7 @@ class SqlSchemaModulizer {
 
             // is this a "pass-thru" module? aka tableless
             // -- if so, need to pass along "passThruTableName" value
-            if (!configRequires[module].tables && moduleNameSplit[1]) {
+            if (parentTableNamePrepend && !configRequires[module].tables && moduleNameSplit[1]) {
                 passThruTableName = moduleNameSplit[1];
 
                 this.setPassThruTableName(passThruTableName, moduleContents);
@@ -431,7 +433,7 @@ class SqlSchemaModulizer {
 
             moduleName = moduleNameSplit[0];
 
-            let updatedTableName = moduleNameSplit[1] ? moduleNameSplit[1] : moduleName;
+            let updatedTableName = moduleNameSplit[1] ? moduleNameSplit[1] : "";
 
             let moduleContents = this.getModuleContents(moduleName);
             
@@ -450,11 +452,14 @@ class SqlSchemaModulizer {
                 assoc: {}
             };
 
+            let defaultTableName = moduleContents.defaultTable
+                ? moduleContents.defaultTable : Object.keys(moduleContents.tables)[0];
+
             for (let table in moduleContents.tables) {
                 let tableName = table;
 
                 if (updatedTableName) {
-                    tableName = tableName.replace(moduleName, updatedTableName);
+                    tableName = tableName.replace(defaultTableName, updatedTableName);
                 }
                 
                 if (tableNamePrepend) {

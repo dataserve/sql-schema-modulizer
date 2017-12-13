@@ -43,6 +43,8 @@ class MySql {
         let defs = [];
         
         for (let field in fields) {
+            fields[field] = this.extractCustomTypes(fields[field], fieldDefaults);
+
             defs.push("  " + this.outputFieldSchema(field, fields[field], fieldDefaults));
         }
 
@@ -113,9 +115,7 @@ class MySql {
         return res.join("\n");
     }
 
-    outputFieldSchema(field, config, fieldDefaults) {
-        let res = ["`" + field + "`"];
-
+    extractCustomTypes(config, fieldDefaults) {
         if (typeof config === "string") {
             config = {
                 "type": config,
@@ -124,11 +124,17 @@ class MySql {
 
         if (fieldDefaults && fieldDefaults[config.type]) {
             let type = fieldDefaults[config.type].type;
-            
+
             config = _object.merge({}, fieldDefaults[config.type], config);
-            
+
             config.type = type;
         }
+
+        return config;
+    }
+
+    outputFieldSchema(field, config, fieldDefaults) {
+        let res = ["`" + field + "`"];
 
         let [type, length] = config.type.split(":");
         
@@ -143,20 +149,44 @@ class MySql {
             if (config.unsigned) {
                 res.push("unsigned");
             }
+
+            if (!config.default && !config.autoInc) {
+                if (config.nullable) {
+                    config.default = null;
+                } else {
+                    config.default = 0;
+                }
+            }
             
             break;
         case "string":
             if (!length) {
-
                 length = 255;
             }
             
             res.push("varchar(" + length + ")");
+
+            if (!config.default) {
+                if (config.nullable) {
+                    config.default = null;
+                } else {
+                    config.default = "";
+                }
+            }
             
             break;
         case "timestamp":
             res.push("timestamp");
+
+            if (config.autoSetTimestamp) {
+                delete config.default;
+                
+                res.push("DEFAULT CURRENT_TIMESTAMP");
+            }
             
+            if (config.autoUpdateTimestamp) {
+                res.push("ON UPDATE CURRENT_TIMESTAMP");
+            }
             break;
         default:
             throw new Error("Unknown type for field: " + field + " - " + type);
@@ -165,19 +195,19 @@ class MySql {
         if (!config.nullable) {
             res.push("NOT NULL");
         }
+
+        if (typeof config.default !== "undefined") {
+            if (config.default === null) {
+                res.push("DEFAULT NULL");
+            } else {
+                res.push("DEFAULT '" + config.default + "'");
+            }
+        }
         
         if (config.autoInc) {
             res.push("AUTO_INCREMENT");
         }
-        
-        if (config.autoSetTimestamp) {
-            res.push("DEFAULT CURRENT_TIMESTAMP");
-        }
-        
-        if (config.autoUpdateTimestamp) {
-            res.push("ON UPDATE CURRENT_TIMESTAMP");
-        }
-        
+
         return res.join(" ");
     }
 
