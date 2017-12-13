@@ -1,5 +1,5 @@
 # sql-schema-modulizer
-Utilize reusable components as building blocks for architecting your SQL schema
+Utilize reusable components as building blocks for architecting your SQL schema. Take the headache out of writing your SQL syntax and the potential for mis-types and rebuilding the wheel.
 
 [![Build Status](https://api.travis-ci.org/dataserve/sql-schema-modulizer.svg?branch=master)](https://travis-ci.org/dataserve/sql-schema-modulizer)
 [![Codacy Badge](https://api.codacy.com/project/badge/Coverage/374af9d5d052451f86b3125ac97d229d)](https://www.codacy.com/app/kdeegan/sql-schema-modulizer?utm_source=github.com&utm_medium=referral&utm_content=dataserve/sql-schema-modulizer&utm_campaign=Badge_Coverage)
@@ -67,6 +67,17 @@ let dbConfig = {
 }
 
 let moduleConfig = {
+    "commentGuest": {
+        "tables": {
+            "comment_guest": {
+                "fields": {
+                    "id": "autoIncId",
+                    "name": "string:128",
+                    "url": "string:255"
+                }
+            }
+        }
+    },
     "mediaWithComment": {
         "extends": {
             "mediaComment": null
@@ -78,17 +89,6 @@ let moduleConfig = {
                     "filename": "string:255",
                     "mime": "string:128",
                     ">comment_cnt": "int"
-                }
-            }
-        }
-    },
-    "commentGuest": {
-        "tables": {
-            "comment_guest": {
-                "fields": {
-                    "id": "autoIncId",
-                    "name": "string:128",
-                    "url": "string:255"
                 }
             }
         }
@@ -233,11 +233,11 @@ There are two types of configuration styles. One defines all your tables directl
 {
   "enable": <enable string match>,
   "disable": <!(enable string match)>,
-  "tables": <tables object>,
   "imports": <imports object>,
   "tableDefaults": <cascading tableDefaults object>,
   "timestamps": <cascading timestamps object>,
-  "fieldDefaults": <cascading fieldDefaults object>
+  "fieldDefaults": <cascading fieldDefaults object>,
+  "tables": <tables object>
 }
 ```
 
@@ -247,22 +247,13 @@ Only table names matching the regex will be *shown* in SQL schema output. Suppor
 #### `<!(enable string match)>`
 Only table names matching the regex will be *removed* in SQL schema output. Supports asterisk (*) and or (|)
 
-#### `<tables object>`
-```javascript
-{
-  "<tableName1>": <table object>,
-  "<tableName2>": <table object>,
-  ...
-}
-```
-
 #### `<import object>`
 This is used to "import" a module into the current dependency tree. It acts as a drop in feature, it does not give any inheritence functionality between the required module and the parent module. An imported module takes on the same namespace as the place it was requested from.
 
 ```javascript
 {
-  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object>,
-  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object>,
+  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object or null to fetch from config/module[ModuleName].json>,
+  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object or null to fetch from config/module[ModuleName].json>,
   ...
 }
 ```
@@ -272,8 +263,8 @@ This is used to "extend" the functionality of a module. Modules extended can ref
 
 ```javascript
 {
-  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object>,
-  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object>,
+  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object or null to fetch from config/module[ModuleName].json>,
+  "<moduleName>(|<nameToUseInSchema>)(:<namespace>)": <module object or null to fetch from config/module[ModuleName].json>,
   ...
 }
 ```
@@ -294,17 +285,8 @@ This is used to specify a module. It can be in it's own file (config/module[Modu
 }
 ```
 
-#### `<table object>`
-```javascript
-{
-  "fields": <fields object>,
-  "keys": <keys object>,
-  "relationships": <relationships object>
-}
-```
-
 #### `<cascading tableDefaults object>`
-You can use this to set DB configuration options, such as character sets & table storage engines (InnoDB vs MyISAM).
+You can use this to set DB configuration options, such as character sets & table storage engines (InnoDB vs MyISAM). When this is placed in the dependency tree, all modules "imported" and "extended" below it will use these values.
 
 ```javascript
 {
@@ -313,7 +295,9 @@ You can use this to set DB configuration options, such as character sets & table
 }
 ```
 
-#### default `<timestamp object>`
+#### default `<cascading timestamp object>`
+Set this to null to disable the timestamp functionality or to create your own. When this is placed in the dependency tree, all modules "imported" and "extended" below it will use these values.
+
 ```javascript
 {
   created: {
@@ -332,8 +316,8 @@ You can use this to set DB configuration options, such as character sets & table
 }
 ```
 
-#### default `<fieldDefaults object>`
-You can use this to create custom field type "macros"
+#### default `<cascading fieldDefaults object>`
+You can use this to create custom field type "macros". When this is placed in the dependency tree, all modules "imported" and "extended" below it will use these values.
 
 ```javascript
 {
@@ -347,6 +331,26 @@ You can use this to create custom field type "macros"
         type: "string:255",
         default: ""
     },
+}
+```
+
+#### `<tables object>`
+If the `<tables object>` is inside a module, they will inherit the modules namespace via a prepended string.
+
+```javascript
+{
+  "<tableName1>": <table object>,
+  "<tableName2>": <table object>,
+  ...
+}
+```
+
+#### `<table object>`
+```javascript
+{
+  "fields": <fields object>,
+  "keys": <keys object>,
+  "relationships": <relationships object>
 }
 ```
 
