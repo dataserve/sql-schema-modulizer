@@ -223,8 +223,6 @@ class SqlSchemaModulizer {
             let moduleContents = this.getModuleContents(moduleName), childrenModules = [];
 
             let cascadeDownTmp = this.extractCascadeDownVariables(moduleContents, cascadeDown);
-
-            let passThruTableName = null;
             
             let passDown = this.extractPassDownVariables(config[module]);
             
@@ -232,9 +230,11 @@ class SqlSchemaModulizer {
                 _object.merge(moduleContents, {extends: passDown.extends});
             }
 
+            let passThruTableName = null;
+
             // is this a "pass-thru" module? aka tableless
             // -- if so, need to pass along "passThruTableName" value
-            if (parentTableNamePrepend && !config[module].tables && moduleNameSplit[1]) {
+            if (!moduleContents.tables && moduleNameSplit[1]) {
                 passThruTableName = moduleNameSplit[1];
 
                 this.setPassThruTableName(passThruTableName, moduleContents);

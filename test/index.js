@@ -672,7 +672,7 @@ describe("SqlSchemaModulizer Tests", function() {
         let dbConfig = {
             [dbName]: {
                 "imports": {
-                    "combiner": null
+                    "combiner|combine1": null
                 }
             }
         }
@@ -680,7 +680,7 @@ describe("SqlSchemaModulizer Tests", function() {
         let moduleConfig = {
             "combiner": {
                 "imports": {
-                    "first|combine1": {
+                    "first": {
                         "extends": {
                             "second|combine2": null,
                         }
@@ -714,8 +714,6 @@ describe("SqlSchemaModulizer Tests", function() {
             modulizer.buildFromObject(dbConfig, moduleConfig);
             
             let dbSql = modulizer.getDbSchema(dbName);
-
-            console.log(dbSql);
 
             let tableSchema = `CREATE TABLE \`combine1\` (
   \`id\` int unsigned NOT NULL AUTO_INCREMENT,
