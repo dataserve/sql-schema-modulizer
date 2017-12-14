@@ -19,14 +19,12 @@ const TIMESTAMP_DEFAULTS = {
     modified: {
         name: "mtime",
         type: "timestamp",
-        fillable: false,
         autoSetTimestamp: true,
         autoUpdateTimestamp: true,
     },
     created: {
         name: "ctime",
         type: "timestamp",
-        fillable: false,
         autoSetTimestamp: true,
     },
 };
@@ -532,7 +530,7 @@ class SqlSchemaModulizer {
         
         for (let table in parentTables) {
             tmpParentTables["^" + table] = parentTables[table];
-        };
+        }
         
         parentTables = tmpParentTables;
 
@@ -557,7 +555,7 @@ class SqlSchemaModulizer {
         let fields = table.fields;
         
         if (fields) {
-            Object.keys(fields).forEach(field => {
+            Object.keys(fields).forEach((field) => {
                 let fieldAssoc = this.associateTable(field, parentTables, siblingTables, childrenTables);
                 
                 if (fieldAssoc === field) {
@@ -593,7 +591,7 @@ class SqlSchemaModulizer {
         let relationships = table.relationships;
         
         if (relationships) {
-            Object.keys(table.relationships).forEach(rel => {
+            Object.keys(table.relationships).forEach((rel) => {
                 table.relationships[rel].forEach((tbl, index) => {
                     let tblAssoc = this.associateTable(tbl, parentTables, siblingTables, childrenTables);
                     
@@ -609,19 +607,19 @@ class SqlSchemaModulizer {
 
     associateTable(str, parentTables, siblingTables, childrenTables) {
         if (parentTables) {
-            Object.keys(parentTables).sort().forEach(table => {
+            Object.keys(parentTables).sort().forEach((table) => {
                 str = str.replace(table, parentTables[table]);
             });
         }
         
         if (siblingTables) {
-            Object.keys(siblingTables).sort().forEach(table => {
+            Object.keys(siblingTables).sort().forEach((table) => {
                 str = str.replace(table, siblingTables[table]);
             });
         }
         
         if (childrenTables) {
-            Object.keys(childrenTables).sort().forEach(table => {
+            Object.keys(childrenTables).sort().forEach((table) => {
                 str = str.replace(table, childrenTables[table]);
             });
         }

@@ -61,7 +61,14 @@ describe("SqlSchemaModulizer Tests", function() {
                                 "autoInc": true,
                                 "key": "primary",
                             },
-                            "key": "string:20",
+                            "numeric": {
+                                "type": "smallint",
+                                "nullable": true,
+                            },
+                            "key": {
+                                "type": "string:20",
+                                "nullable": true,
+                            },
                         },
                     },
                 },
@@ -80,27 +87,25 @@ describe("SqlSchemaModulizer Tests", function() {
                 return;
             }
 
-            if (dbSql.indexOf("CREATE TABLE `default`") === -1) {
-                done(new Error("create table not found"));
+            let tableSchema = `CREATE TABLE \`default\` (
+  \`id\` int unsigned NOT NULL AUTO_INCREMENT,
+  \`numeric\` smallint DEFAULT NULL,
+  \`key\` varchar(20) DEFAULT NULL,
+  \`mtime\` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+  \`ctime\` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;`;
+
+            if (dbSql.indexOf(tableSchema) === -1) {
+                done(new Error("create table default not found"));
                 return;
             }
 
-            if (dbSql.indexOf("`id` int unsigned NOT NULL AUTO_INCREMENT") === -1) {
-                done(new Error("auto increment not found"));
-                return;
-            }
-
-            if (dbSql.indexOf("`key` varchar(20) NOT NULL DEFAULT ''") === -1) {
-                done(new Error("key string not found"));
-                return;
-            }
-            
             done();
         } catch (err) {
             done(err);
         }
     });
-
 
     it("Build modules from Manual Config", function(done) {
         const dbName = "modulizer";
@@ -260,4 +265,253 @@ describe("SqlSchemaModulizer Tests", function() {
             done(err);
         }
     });
+
+    it("Invalid field type", function(done) {
+        const dbName = "modulizer";
+        
+        let dbConfig = {
+            [dbName]: {
+                "tables": {
+                    "test": {
+                        "fields": {
+                            "id": "notAType"
+                        }
+                    }
+                }
+            }
+        };
+
+        try {
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfig);
+            
+            let dbSql = modulizer.getDbSchema(dbName);
+
+            done(new Error("invalid field type not triggered"));
+        } catch (err) {
+            if (err.message.indexOf("Unknown type") !== -1) {
+                done();
+            } else {
+                done(err);
+            }
+        }
+    });
+
+    it("Multi field key", function(done) {
+        const dbName = "modulizer";
+        
+        let dbConfig = {
+            [dbName]: {
+                "tables": {
+                    "test": {
+                        "fields": {
+                            "id1": "int",
+                            "id2": "int"
+                        },
+                        "keys": {
+                            "ids": {
+                                "type": true,
+                                "fields": ["id1", "id2"],
+                            },
+                            "ids_unique": {
+                                "type": "unique",
+                                "fields": ["id1", "id2"],
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        try {
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfig);
+            
+            let dbSql = modulizer.getDbSchema(dbName);
+
+            if (dbSql.indexOf("KEY `ids` (`id1`,`id2`)") === -1) {
+                done(new Error("regular multi key not found"));
+                return;
+            }
+
+            if (dbSql.indexOf("UNIQUE KEY `ids_unique` (`id1`,`id2`)") === -1) {
+                done(new Error("unique multi key not found"));
+                return;
+            }
+
+            done();
+        } catch (err) {
+            done(err);
+        }
+    });
+    
+    it("Cascading fields", function(done) {
+        const dbName = "modulizer";
+        
+        let dbConfigFail = {
+            [dbName]: {
+                "imports": {
+                    "firstFail|first": null
+                },
+                "timestamps": null,
+                "tableDefaults": null,
+                "fieldDefaults": null,
+            }
+        }
+
+        let dbConfigSuccess = {
+            [dbName]: {
+                "imports": {
+                    "firstSuccess|first": null
+                },
+                "timestamps": null,
+                "tableDefaults": null,
+                "fieldDefaults": null,
+            }
+        }
+        
+        let moduleConfig = {
+            "firstFail": {
+                "extends": {
+                    "second": null,
+                },
+                "tables": {
+                    "first": {
+                        "fields": {
+                            "id": "autoIncId",
+                        }
+                    }
+                }
+            },
+            "firstSuccess": {
+                "extends": {
+                    "second": null,
+                },
+                "tables": {
+                    "first": {
+                        "fields": {
+                            "id": "int",
+                        }
+                    }
+                }
+            },
+            "second": {
+                "tableDefaults": {
+                    "charset": "fakeCharset",
+                    "engine": "fakeEngine",
+                },
+                "timestamps": {
+                    "created": {
+                        "name": "created_at",
+                        "type": "timestamp",
+                        "autoSetTimestamp": true,
+                    },
+                },
+                "fieldDefaults": {
+                    "autoIncId": {
+                        "type": "smallint",
+                        "key": "primary",
+                        "autoInc": true,
+                        "unsigned": true
+                    }
+                },
+                "extends": {
+                    "third": null,
+                },
+                "tables": {
+                    "second": {
+                        "fields": {
+                            "id": "autoIncId",
+                        }
+                    }
+                }
+            },
+            "third": {
+                "tableDefaults": {
+                    "charset": "SuperAmazing",
+                },
+                "timestamps": {
+                    "modified": {
+                        "name": "modified_at",
+                        "type": "timestamp",
+                        "autoSetTimestamp": true,
+                        "autoUpdateTimestamp": true,
+                    },
+                },
+                "fieldDefaults": {
+                    "autoIncId": {
+                        "type": "bigint",
+                        "unsigned": true
+                    }
+                },
+                "tables": {
+                    "third": {
+                        "fields": {
+                            "id": "autoIncId",
+                        }
+                    }
+                }
+            }
+        };
+
+        try {
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfigFail, moduleConfig);
+            
+            let dbSql = modulizer.getDbSchema(dbName);
+
+            done(new Error("invalid field type didn't fail"));
+        } catch (err) {
+            if (err.message.indexOf("Unknown type") === -1) {
+                done(err);
+                return;
+            }
+        }
+
+        try {
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfigSuccess, moduleConfig);
+            
+            let dbSql = modulizer.getDbSchema(dbName);
+
+            let tableSchema = `CREATE TABLE \`first\` (
+  \`id\` int NOT NULL DEFAULT '0'
+);`;
+
+            if (dbSql.indexOf(tableSchema) === -1) {
+                done(new Error("table first schema not found"));
+                return;
+            }
+            
+            tableSchema = `CREATE TABLE \`first_second\` (
+  \`id\` smallint unsigned NOT NULL AUTO_INCREMENT,
+  \`created_at\` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  PRIMARY KEY (\`id\`)
+) ENGINE=fakeEngine DEFAULT CHARSET=fakeCharset;`;
+
+            if (dbSql.indexOf(tableSchema) === -1) {
+                done(new Error("table first_second schema not found"));
+                return;
+            }
+            
+            tableSchema = `CREATE TABLE \`first_second_third\` (
+  \`id\` bigint unsigned NOT NULL DEFAULT '0',
+  \`modified_at\` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+) DEFAULT CHARSET=SuperAmazing;`;
+
+            if (dbSql.indexOf(tableSchema) === -1) {
+                done(new Error("table first_second_third schema not found"));
+                return;
+            }
+
+            done();
+        } catch (err) {
+            done(err);
+        }
+    });
+    
 });
