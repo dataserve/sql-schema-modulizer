@@ -514,4 +514,238 @@ describe("SqlSchemaModulizer Tests", function() {
         }
     });
     
+
+    it("Trigger Various Errors", function(done) {
+        const dbName = "modulizer";
+        
+        try {
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromPath("../config/example");
+
+            modulizer.buildFromPath("../config/example");
+            
+            let dbSql = modulizer.getDbSchema(dbName);
+
+            done(new Error("multiple builds not triggered"));
+            return;
+        } catch (err) {
+            if (err.message.indexOf("Schema already built") === -1) {
+                done(err);
+                return;
+            }
+        }
+
+        let dbConfig = {
+            [dbName]: {
+                "tables": {
+                    "test": {
+                        "fields": {
+                            "id": "int"
+                        }
+                    }
+                }
+            }
+        };
+
+        try {
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfig);
+
+            modulizer.buildFromObject(dbConfig);
+            
+            let dbSql = modulizer.getDbSchema(dbName);
+
+            done(new Error("multiple builds not triggered"));
+            return;
+        } catch (err) {
+            if (err.message.indexOf("Schema already built") === -1) {
+                done(err);
+                return;
+            }
+        }
+
+        try {
+            const modulizer = new SqlSchemaModulizer("postgresql");
+
+            modulizer.buildFromObject(dbConfig);
+            
+            let dbSql = modulizer.getDbSchema(dbName);
+
+            done(new Error("unsupported db not triggered"));
+            return;
+        } catch (err) {
+            if (err.message.indexOf("dbType not supported") === -1) {
+                done(err);
+                return;
+            }
+        }
+
+        try {
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfig);
+            
+            let dbSql = modulizer.getDbSchema(dbName + "INVALID");
+
+            done(new Error("invalid db not triggered"));
+            return;
+        } catch (err) {
+            if (err.message.indexOf("dbName '" + dbName + "INVALID' not found in config") === -1) {
+                done(err);
+                return;
+            }
+        }
+
+        try {
+            const modulizer = new SqlSchemaModulizer();
+            
+            modulizer.buildFromObject(dbConfig);
+            
+            let dbSql = modulizer.getTableSchema(dbName + "INVALID", "test");
+
+            done(new Error("invalid db table not triggered"));
+            return;
+        } catch (err) {
+            if (err.message.indexOf("dbName '" + dbName + "INVALID' not found in config") === -1) {
+                done(err);
+                return;
+            }
+        }
+
+        try {
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfig);
+            
+            let dbSql = modulizer.getTableSchema(dbName, "testINVALID");
+
+            done(new Error("invalid table not triggered"));
+            return;
+        } catch (err) {
+            if (err.message.indexOf("tableName 'testINVALID' not found in config") === -1) {
+                done(err);
+                return;
+            }
+        }
+        
+        dbConfig = {
+            [dbName]: {
+                "imports": {
+                    "fakeModule": null
+                },
+                "tables": {
+                    "test": {
+                        "fields": {
+                            "id": "int"
+                        }
+                    }
+                }
+            }
+        };
+
+        try {
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfig);
+            
+            let dbSql = modulizer.getDbSchema(dbName);
+
+            console.log(dbSql);
+
+            done(new Error("invalid module not triggered"));
+            return;
+        } catch (err) {
+            if (err.message.indexOf("module not found") === -1) {
+                done(err);
+                return;
+            }
+        }
+
+        done();
+    });
+
+    it("Pass thru names", function(done) {
+        const dbName = "modulizer";
+        
+        let dbConfig = {
+            [dbName]: {
+                "imports": {
+                    "combiner": null
+                }
+            }
+        }
+        
+        let moduleConfig = {
+            "combiner": {
+                "imports": {
+                    "first|combine1": {
+                        "extends": {
+                            "second|combine2": null,
+                        }
+                    }
+                }
+            },
+            "first": {
+                "tables": {
+                    "first": {
+                        "fields": {
+                            "id": "autoIncId",
+                        }
+                    }
+                }
+            },
+            "second": {
+                "tables": {
+                    "second": {
+                        "fields": {
+                            "id": "autoIncId",
+                            "^first_id": "int"
+                        }
+                    }
+                }
+            }
+        };
+
+        try {
+            const modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfig, moduleConfig);
+            
+            let dbSql = modulizer.getDbSchema(dbName);
+
+            console.log(dbSql);
+
+            let tableSchema = `CREATE TABLE \`combine1\` (
+  \`id\` int unsigned NOT NULL AUTO_INCREMENT,
+  \`mtime\` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+  \`ctime\` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;`;
+
+            if (dbSql.indexOf(tableSchema) === -1) {
+                done(new Error("table combine1 schema not found"));
+                return;
+            }
+
+            tableSchema = `CREATE TABLE \`combine1_combine2\` (
+  \`id\` int unsigned NOT NULL AUTO_INCREMENT,
+  \`combine1_id\` int NOT NULL DEFAULT '0',
+  \`mtime\` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+  \`ctime\` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;`;
+
+            if (dbSql.indexOf(tableSchema) === -1) {
+                done(new Error("table combine2 schema not found"));
+                return;
+            }
+        } catch (err) {
+            done(err);
+            return;
+        }
+        
+        done();
+    });
 });
