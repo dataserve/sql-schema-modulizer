@@ -303,13 +303,11 @@ Set this to null to disable the timestamp functionality or to create your own. W
   created: {
     name: "ctime",
     type: "timestamp",
-    fillable: false,
     autoSetTimestamp: true
   },
   modified:{
     name: "mtime",
     type: "timestamp",
-    fillable: false,
     autoSetTimestamp: true,
     autoUpdateTimestamp: true
   }
@@ -369,7 +367,7 @@ If the `<tables object>` is inside a module, they will inherit the modules names
   "type": <int|string|string:length|timestamp|tinyint|smallint|mediumint|bigint>,
   "key": <primary|unique|true|default:false>,
   "nullable": <true|false|default:false>,
-  "default": <string|integer|null|default:nullable==true:null, type==string: "",type==numeric:0>,
+  "default": <string|integer|null|default:nullable==true: null, type==string: "", type==numeric: 0>,
   "autoInc": <true|false|default:false>,
   "autoSetTimestamp": <true|false|default:false>,
   "autoUpdateTimestamp": <true|false|default:false>
