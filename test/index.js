@@ -746,4 +746,70 @@ describe("SqlSchemaModulizer Tests", function() {
         
         done();
     });
+
+    it("Enable/Disable", function(done) {
+        const dbName = "modulizer";
+        
+        let dbConfig = {
+            [dbName]: {
+                "enable": "first",
+                "tables": {
+                    "first": {
+                        "fields": {
+                            "id": "int"
+                        }
+                    },
+                    "second": {
+                        "fields": {
+                            "id": "int"
+                        }
+                    }
+                }
+            }
+        }
+        
+        try {
+            let modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfig);
+            
+            let dbSql = modulizer.getDbSchema(dbName);
+
+            if (dbSql.indexOf("CREATE TABLE `first`") === -1) {
+                done(new Error("enable table first schema not found"));
+                return;
+            }
+
+            if (dbSql.indexOf("CREATE TABLE `second`") !== -1) {
+                done(new Error("enable table second schema found"));
+                return;
+            }
+
+            delete dbConfig[dbName].enable;
+
+            dbConfig[dbName].disable = "first";
+
+modulizer = new SqlSchemaModulizer();
+
+            modulizer.buildFromObject(dbConfig);
+            
+            dbSql = modulizer.getDbSchema(dbName);
+
+            if (dbSql.indexOf("CREATE TABLE `first`") !== -1) {
+                done(new Error("disable table first schema found"));
+                return;
+            }
+
+            if (dbSql.indexOf("CREATE TABLE `second`") === -1) {
+                done(new Error("disable table second schema not found"));
+                return;
+            }
+        } catch (err) {
+            done(err);
+            return;
+        }
+        
+        done();
+    });
+
 });

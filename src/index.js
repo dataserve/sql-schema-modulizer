@@ -3,12 +3,8 @@
 const _array = require("lodash/array");
 const _object = require("lodash/object");
 const path = require("path");
-const Type = require("type-of-is");
-const util = require("util");
 
 const MySql = require("./mysql");
-
-const DEBUG = false;
 
 const TABLE_DEFAULTS = {
     charset: "utf8",
@@ -97,9 +93,9 @@ class SqlSchemaModulizer {
             throw new Error("Schema already built!");
         }
 
-        this.config = config || {};
+        this.config = config ? JSON.parse(JSON.stringify(config)) : {};
 
-        this.modules = modules || {};
+        this.modules = modules ? JSON.parse(JSON.stringify(modules)) : {};
 
         this.build();
     }
@@ -146,7 +142,7 @@ class SqlSchemaModulizer {
             }
 
             if (this.config[dbName].tables) {
-                this.buildTables(dbName, cascadeDown);
+                this.buildTables(dbName, enable, cascadeDown);
             }
 
             if (this.config[dbName].imports && Object.keys(this.config[dbName].imports).length) {
@@ -154,16 +150,12 @@ class SqlSchemaModulizer {
 
                 this.buildModules(dbName, enable);
             }
-            
-            //this.debug(this.tree, true);
-
-            //this.debug(this.db.getDbSchema(dbName, this.config[dbName]));
         }
 
         this.built = true;
     }
 
-    buildTables(dbName, cascadeDown) {
+    buildTables(dbName, enable, cascadeDown) {
         let cascadeVars = {};
 
         for (let cascadeField in CASCADE_DOWN_FIELDS) {
@@ -173,6 +165,12 @@ class SqlSchemaModulizer {
         }
 
         for (let table in this.config[dbName].tables) {
+            if (enable && !table.match(enable)) {
+                delete this.config[dbName].tables[table];
+                
+                continue;
+            }
+
             let tableConfig = this.config[dbName].tables[table];
             
             _object.merge(tableConfig, cascadeVars);
@@ -271,7 +269,7 @@ class SqlSchemaModulizer {
         if (parentModule) {
             let parentModuleSplit = parentModule.split(":")[0].split("|");
 
-            parentModuleName = parentModuleSplit[1] ? parentModuleSplit[1] : parentModuleSplit[0];
+            parentModuleName = parentModuleSplit[1] || parentModuleSplit[0];
         }
         
         let retChildrenModules = [];
@@ -431,7 +429,7 @@ class SqlSchemaModulizer {
 
             moduleName = moduleNameSplit[0];
 
-            let updatedTableName = moduleNameSplit[1] ? moduleNameSplit[1] : "";
+            let updatedTableName = moduleNameSplit[1] || "";
 
             let moduleContents = this.getModuleContents(moduleName);
             
@@ -450,8 +448,7 @@ class SqlSchemaModulizer {
                 assoc: {}
             };
 
-            let defaultTableName = moduleContents.defaultTable
-                ? moduleContents.defaultTable : Object.keys(moduleContents.tables)[0];
+            let defaultTableName = moduleContents.defaultTable || Object.keys(moduleContents.tables)[0];
 
             for (let table in moduleContents.tables) {
                 let tableName = table;
@@ -627,17 +624,6 @@ class SqlSchemaModulizer {
         return str;
     }
     
-    debug(arg, isInspect) {
-        if (!DEBUG) {
-            return;
-        }
-        if (isInspect) {
-            console.log(util.inspect(arg, false, null));
-        } else {
-            console.log(arg);
-        }
-    }
-
     getDb() {
         return this.db;
     }
