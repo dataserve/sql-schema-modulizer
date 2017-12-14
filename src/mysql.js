@@ -8,16 +8,18 @@ class MySql {
     }
 
     getDbSchema(dbName, dbConfig) {
-        let tables = dbConfig.tables;
-        
-        let tablesSorted = Object.keys(tables).sort();
-        
         let res = [];
 
         res.push("CREATE DATABASE " + dbName + ";");
-        
-        for (let tableName of tablesSorted) {
-            res.push(this.getTableSchema(tableName, tables[tableName]));
+
+        if (dbConfig.tables && Object.keys(dbConfig.tables).length) {
+            let tables = dbConfig.tables;
+            
+            let tablesSorted = Object.keys(tables).sort();
+            
+            for (let tableName of tablesSorted) {
+                res.push(this.getTableSchema(tableName, tables[tableName]));
+            }
         }
         
         return res.join("\n\n");
