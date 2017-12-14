@@ -385,8 +385,9 @@ If the `<tables object>` is inside a module, they will inherit the modules names
 
 #### `"keyName" string`
 There are several "wildcard" characters which can be used in extended modules. They can reference parent modules, children modules, and sibling tables.
-* `^` would reference the parent module default table, while `^tableName` would reference the **parent** modules table, `tableName`
-* `$tableName` would reference the sibling table, `tableName` of the **same** module
+* `^tableName` would reference the `tableName` table of the **parent** module
+* `^` is shorthand for above and would reference the default table of the **parent** module
+* `$tableName` would reference the `tableName` table of the **same** module
 * `>tableName` would reference the `tableName` table of a **child** module
 
 #### `<key object>`
