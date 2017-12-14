@@ -70,8 +70,8 @@ describe("SqlSchemaModulizer Tests", function() {
                                 "nullable": true,
                             },
                         },
-                    },
-                },
+                    }
+                }
             },
         };
         
@@ -112,6 +112,7 @@ describe("SqlSchemaModulizer Tests", function() {
         
         let dbConfig = {
             [dbName]: {
+                "disable": "*comment_guest_ignore*",
                 "imports": {
                     "commentGuest": null,
                     "mediaWithComment|audio": null,
@@ -145,6 +146,11 @@ describe("SqlSchemaModulizer Tests", function() {
                             "name": "string:128",
                             "url": "string:255",
                         }
+                    },
+                    "comment_guest_ignore": {
+                        "fields": {
+                            "id": "int"
+                        }
                     }
                 }
             },
@@ -153,7 +159,7 @@ describe("SqlSchemaModulizer Tests", function() {
                     "comment": {
                         "fields": {
                             "id": "autoIncId",
-                            "^media_id": {
+                            "^_id": {
                                 "type": "int",
                                 "key": true
                             },
@@ -165,7 +171,7 @@ describe("SqlSchemaModulizer Tests", function() {
                         },
                         "relationships": {
                             "belongsTo": [
-                                "^media",
+                                "^",
                                 "comment_guest",
                             ]
                         }
@@ -181,6 +187,11 @@ describe("SqlSchemaModulizer Tests", function() {
             
             let dbSql = modulizer.getDbSchema(dbName);
 
+            if (dbSql.indexOf("CREATE TABLE `comment_guest_ignore`") !== -1) {
+                done(new Error("disabled table found"));
+                return;
+            }
+            
             const tableNames = [
                 "audio",
                 "audio_comment",
@@ -521,6 +532,9 @@ describe("SqlSchemaModulizer Tests", function() {
         try {
             const modulizer = new SqlSchemaModulizer();
 
+            //coverage only
+            let db = modulizer.getDb();
+
             modulizer.buildFromPath("../config/example");
 
             modulizer.buildFromPath("../config/example");
@@ -701,7 +715,7 @@ describe("SqlSchemaModulizer Tests", function() {
                     "second": {
                         "fields": {
                             "id": "autoIncId",
-                            "^first_id": "int"
+                            "^_id": "int"
                         }
                     }
                 }

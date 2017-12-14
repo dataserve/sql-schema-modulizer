@@ -442,13 +442,14 @@ class SqlSchemaModulizer {
             }
 
             let siblingsAssoc = {}, moduleTables = [];
+
+            let defaultTableName = moduleContents.defaultTable || Object.keys(moduleContents.tables)[0];
             
             moduleInfo[module] = {
                 tables: [],
-                assoc: {}
+                assoc: {},
+                defaultTable: defaultTableName,
             };
-
-            let defaultTableName = moduleContents.defaultTable || Object.keys(moduleContents.tables)[0];
 
             for (let table in moduleContents.tables) {
                 let tableName = table;
@@ -492,10 +493,12 @@ class SqlSchemaModulizer {
         }
         
         for (let tableName in tables) {
-            let parentTables = {}, siblingTables = {}, childrenTables = {};
+            let parentTables = {}, siblingTables = {}, childrenTables = {}, defaultParentTable = null;
             
             if (tableInfo[tableName].parentModule && moduleInfo[tableInfo[tableName].parentModule]) {
                 parentTables = moduleInfo[tableInfo[tableName].parentModule].assoc;
+                
+                defaultParentTable = parentTables[moduleInfo[tableInfo[tableName].parentModule].defaultTable];
             }
             
             if (tableInfo[tableName].childrenModules) {
@@ -510,7 +513,7 @@ class SqlSchemaModulizer {
                 siblingTables = tableInfo[tableName].siblingsAssoc;
             }
             
-            this.extendTable(tables, tableName, parentTables, siblingTables, childrenTables);
+            this.extendTable(tables, tableName, parentTables, siblingTables, childrenTables, defaultParentTable);
         }
         
         if (Object.keys(tables).length) {
@@ -522,11 +525,16 @@ class SqlSchemaModulizer {
         }
     }
 
-    extendTable(tables, tableName, parentTables, siblingTables, childrenTables) {
+    extendTable(tables, tableName, parentTables, siblingTables, childrenTables, defaultParentTable) {
         let tmpParentTables = {};
         
-        for (let table in parentTables) {
+        for (let table in parentTables) {            
             tmpParentTables["^" + table] = parentTables[table];
+        }
+
+        if (defaultParentTable) {
+            //default table, needs to be last for string replace order
+            tmpParentTables["^"] = defaultParentTable;
         }
         
         parentTables = tmpParentTables;
@@ -604,9 +612,14 @@ class SqlSchemaModulizer {
 
     associateTable(str, parentTables, siblingTables, childrenTables) {
         if (parentTables) {
-            Object.keys(parentTables).sort().forEach((table) => {
-                str = str.replace(table, parentTables[table]);
-            });
+            for (let table of Object.keys(parentTables)) {
+                let strUpdated = str.replace(table, parentTables[table]);
+
+                if (str !== strUpdated) {
+                    str = strUpdated;
+                    break;
+                }
+            }
         }
         
         if (siblingTables) {

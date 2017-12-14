@@ -4,14 +4,14 @@
             "tables": {
                 "media": {
                     "fields": {
-                        "^user_id": {
+                        "^_id": {
                             "type": "int",
                             "key": true
                         }
                     },
                     "relationships": {
                         "belongsTo": [
-                            "^user"
+                            "^"
                         ]
                     }
                 }

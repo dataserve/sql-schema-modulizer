@@ -4,7 +4,7 @@
             "tables": {
                 "category_ref": {
                     "fields": {
-                        "^blog_id": {
+                        "^_id": {
                             "type": "int",
                             "key": true
                         }
@@ -14,13 +14,13 @@
                             "type": "unique",
                             "fields": [
                                 "$category_id",
-                                "^blog_id"
+                                "^_id"
                             ]
                         }
                     },
                     "relationships": {
                         "belongsTo": [
-                            "^blog"
+                            "^"
                         ]
                     }
                 }
@@ -30,14 +30,14 @@
             "tables": {
                 "comment": {
                     "fields": {
-                        "^blog_id": {
+                        "^_id": {
                             "type": "int",
                             "key": true
                         }
                     },
                     "relationships": {
                         "belongsTo": [
-                            "^blog"
+                            "^"
                         ]
                     }
                 }
@@ -47,14 +47,14 @@
             "tables": {
                 "media": {
                     "fields": {
-                        "^blog_id": {
+                        "^_id": {
                             "type": "int",
                             "key": true
                         }
                     },
                     "relationships": {
                         "belongsTo": [
-                            "^blog"
+                            "^"
                         ]
                     }
                 }
