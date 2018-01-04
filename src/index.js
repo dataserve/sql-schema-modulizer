@@ -653,30 +653,32 @@ class SqlSchemaModulizer {
         for (let tableName in this.config[dbName].tables) {
             let table = this.config[dbName].tables[tableName];
             
-            let fieldDefaults = table.fieldDefaults;
-            
-            if (!fieldDefaults) {
-                continue;
-            }
-
             for (let field in table.fields) {
                 let fieldVal = table.fields[field];
 
                 if (typeof fieldVal === "string") {
-                    table.fields[field] = {
+                    table.fields[field] = fieldVal = {
                         "type": fieldVal,
                     };
                 }
-                
-                if (fieldDefaults && fieldDefaults[fieldVal.type]) {
-                    let type = fieldDefaults[fieldVal.type].type;
-                    
-                    table.fields[field] = _object.merge({}, fieldDefaults[fieldVal.type], fieldVal);
-                    
-                    table.fields[field].type = type;
 
-                    table.fields[field].origType = fieldVal.type;
+                let fieldDefaults = table.fieldDefaults;
+                
+                if (!fieldDefaults) {
+                    continue;
                 }
+
+                if (!fieldDefaults[fieldVal.type]) {
+                    continue;
+                }
+
+                let type = fieldDefaults[fieldVal.type].type;
+                
+                table.fields[field] = _object.merge({}, fieldDefaults[fieldVal.type], fieldVal);
+                
+                table.fields[field].type = type;
+
+                table.fields[field].origType = fieldVal.type;
             }
         }
     }
