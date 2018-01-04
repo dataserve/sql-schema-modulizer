@@ -32,6 +32,16 @@ const FIELD_DEFAULTS = {
         autoInc: true,
         unsigned: true
     },
+    primaryId: {
+        type: "int",
+        key: "primary",
+        unsigned: true
+    },
+    refId: {
+        type: "int",
+        key: true,
+        unsigned: true
+    },
     string: {
         type: "string:255",
         default: ""
@@ -64,7 +74,7 @@ class SqlSchemaModulizer {
         if (!dbType) {
             dbType = "mysql";
         }
-        
+
         //TODO: add support for postgresql
         switch (dbType.toLowerCase()) {
         case "mysql":
@@ -150,6 +160,8 @@ class SqlSchemaModulizer {
 
                 this.buildModules(dbName, enable);
             }
+
+            this.mergeTableDefaults(dbName);
         }
 
         this.built = true;
@@ -636,9 +648,53 @@ class SqlSchemaModulizer {
         
         return str;
     }
+
+    mergeTableDefaults(dbName) {
+        for (let tableName in this.config[dbName].tables) {
+            let table = this.config[dbName].tables[tableName];
+            
+            let fieldDefaults = table.fieldDefaults;
+            
+            if (!fieldDefaults) {
+                continue;
+            }
+
+            for (let field in table.fields) {
+                let fieldVal = table.fields[field];
+
+                if (typeof fieldVal === "string") {
+                    table.fields[field] = {
+                        "type": fieldVal,
+                    };
+                }
+                
+                if (fieldDefaults && fieldDefaults[fieldVal.type]) {
+                    let type = fieldDefaults[fieldVal.type].type;
+                    
+                    table.fields[field] = _object.merge({}, fieldDefaults[fieldVal.type], fieldVal);
+                    
+                    table.fields[field].type = type;
+
+                    table.fields[field].origType = fieldVal.type;
+                }
+            }
+        }
+    }
     
     getDb() {
         return this.db;
+    }
+
+    getDbNames() {
+        return Object.keys(this.config);
+    }
+
+    getDbConfig(dbName) {
+        if (!this.config[dbName]) {
+            throw new Error("dbName '" + dbName + "' not found in config");
+        }
+        
+        return this.config[dbName];
     }
 
     getDbSchema(dbName) {

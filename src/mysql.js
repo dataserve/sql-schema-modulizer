@@ -28,8 +28,6 @@ class MySql {
     getTableSchema(tableName, tableConfig) {
         let tableDefaults = tableConfig.tableDefaults;
         
-        let fieldDefaults = tableConfig.fieldDefaults;
-        
         let fields = tableConfig.fields;
 
         let keys = tableConfig.keys;
@@ -45,9 +43,7 @@ class MySql {
         let defs = [];
         
         for (let field in fields) {
-            fields[field] = this.extractCustomTypes(fields[field], fieldDefaults);
-
-            defs.push("  " + this.outputFieldSchema(field, fields[field], fieldDefaults));
+            defs.push("  " + this.outputFieldSchema(field, fields[field]));
         }
 
         if (timestamps) {
@@ -117,25 +113,7 @@ class MySql {
         return res.join("\n");
     }
 
-    extractCustomTypes(config, fieldDefaults) {
-        if (typeof config === "string") {
-            config = {
-                "type": config,
-            };
-        }
-
-        if (fieldDefaults && fieldDefaults[config.type]) {
-            let type = fieldDefaults[config.type].type;
-
-            config = _object.merge({}, fieldDefaults[config.type], config);
-
-            config.type = type;
-        }
-
-        return config;
-    }
-
-    outputFieldSchema(field, config, fieldDefaults) {
+    outputFieldSchema(field, config) {
         let res = ["`" + field + "`"];
 
         let [type, length] = config.type.split(":");
