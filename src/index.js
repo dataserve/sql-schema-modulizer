@@ -37,7 +37,7 @@ const FIELD_DEFAULTS = {
         key: "primary",
         unsigned: true
     },
-    refId: {
+    foreignId: {
         type: "int",
         key: true,
         unsigned: true
