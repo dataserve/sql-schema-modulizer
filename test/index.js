@@ -12,6 +12,7 @@ describe("SqlSchemaModulizer Tests", function() {
             const dbName = "blog";
             
             const dbSql = modulizer.getDbSchema(dbName);
+            console.log(modulizer.getDbConfig(dbName));
 
             const tableNames = [
                 "blog",
@@ -27,7 +28,7 @@ describe("SqlSchemaModulizer Tests", function() {
 
             for (let tableName of tableNames) {
                 let match = "CREATE TABLE `" + tableName + "`";
-                
+
                 if (dbSql.indexOf(match) === -1) {
                     done(new Error("dbSql missing table " + tableName));
                     return;
@@ -367,7 +368,8 @@ describe("SqlSchemaModulizer Tests", function() {
                     "firstFail|first": null
                 },
                 "timestamps": null,
-                "tableDefaults": null,
+                "charset": null,
+                "engine": null,
                 "fieldDefaults": null,
             }
         }
@@ -378,7 +380,8 @@ describe("SqlSchemaModulizer Tests", function() {
                     "firstSuccess|first": null
                 },
                 "timestamps": null,
-                "tableDefaults": null,
+                "charset": null,
+                "engine": null,
                 "fieldDefaults": null,
             }
         }
@@ -409,10 +412,8 @@ describe("SqlSchemaModulizer Tests", function() {
                 }
             },
             "second": {
-                "tableDefaults": {
-                    "charset": "fakeCharset",
-                    "engine": "fakeEngine",
-                },
+                "charset": "fakeCharset",
+                "engine": "fakeEngine",
                 "timestamps": {
                     "created": {
                         "name": "created_at",
@@ -440,9 +441,8 @@ describe("SqlSchemaModulizer Tests", function() {
                 }
             },
             "third": {
-                "tableDefaults": {
-                    "charset": "SuperAmazing",
-                },
+                "charset": "SuperAmazing",
+                "engine": null,
                 "timestamps": {
                     "modified": {
                         "name": "modified_at",

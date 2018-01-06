@@ -1,6 +1,6 @@
-"use strict";
+'use strict';
 
-const _object = require("lodash/object");
+const _object = require('lodash/object');
 
 class MySql {
 
@@ -10,7 +10,7 @@ class MySql {
     getDbSchema(dbName, dbConfig) {
         let res = [];
 
-        res.push("CREATE DATABASE " + dbName + ";");
+        res.push('CREATE DATABASE ' + dbName + ';');
 
         if (dbConfig.tables && Object.keys(dbConfig.tables).length) {
             let tables = dbConfig.tables;
@@ -22,12 +22,10 @@ class MySql {
             }
         }
         
-        return res.join("\n\n");
+        return res.join('\n\n');
     }
     
     getTableSchema(tableName, tableConfig) {
-        let tableDefaults = tableConfig.tableDefaults;
-        
         let fields = tableConfig.fields;
 
         let keys = tableConfig.keys;
@@ -38,17 +36,17 @@ class MySql {
         
         let res = [];
         
-        res.push("CREATE TABLE `" + tableName + "` (");
+        res.push('CREATE TABLE `' + tableName + '` (');
         
         let defs = [];
         
         for (let field in fields) {
-            defs.push("  " + this.outputFieldSchema(field, fields[field]));
+            defs.push('  ' + this.outputFieldSchema(field, fields[field]));
         }
 
         if (timestamps) {
             for (let field in timestamps) {
-                defs.push("  " + this.outputFieldSchema(timestamps[field].name, timestamps[field]));
+                defs.push('  ' + this.outputFieldSchema(timestamps[field].name, timestamps[field]));
             }
         }
         
@@ -56,7 +54,7 @@ class MySql {
             let keySchema = this.outputKeySchema(field, fields[field]);
             
             if (keySchema) {
-                defs.push("  " + keySchema);
+                defs.push('  ' + keySchema);
             }
         }
         
@@ -65,7 +63,7 @@ class MySql {
                 let keySchema = this.outputMultiKeySchema(key, keys[key]);
                 
                 if (keySchema) {
-                    defs.push("  " + keySchema);
+                    defs.push('  ' + keySchema);
                 }
             }
         }
@@ -74,7 +72,7 @@ class MySql {
             let cnt = 1;
             
             for (let relatedTableName of belongsTo) {
-                defs.push("  " + this.outputForeignKeySchema(tableName, relatedTableName, cnt));
+                defs.push('  ' + this.outputForeignKeySchema(tableName, relatedTableName, cnt));
                 
                 ++cnt;
             }
@@ -83,10 +81,10 @@ class MySql {
         let len = defs.length, cnt = 0;
         
         for (let i in defs) {
-            let comma = ",";
+            let comma = ',';
             
             if (cnt === (len - 1)) {
-                comma = "";
+                comma = '';
             }
             
             defs[i] += comma;
@@ -96,38 +94,36 @@ class MySql {
         
         res = res.concat(defs);
 
-        let close = [")"];
+        let close = [')'];
 
-        if (tableDefaults) {
-            if (tableDefaults.engine) {
-                close.push("ENGINE=" + tableDefaults.engine);
-            }
-
-            if (tableDefaults.charset) {
-                close.push("DEFAULT CHARSET=" + tableDefaults.charset);
-            }
+        if (tableConfig.engine) {
+            close.push('ENGINE=' + tableConfig.engine);
         }
 
-        res.push(close.join(" ") + ";");
+        if (tableConfig.charset) {
+            close.push('DEFAULT CHARSET=' + tableConfig.charset);
+        }
+
+        res.push(close.join(' ') + ';');
         
-        return res.join("\n");
+        return res.join('\n');
     }
 
     outputFieldSchema(field, config) {
-        let res = ["`" + field + "`"];
+        let res = ['`' + field + '`'];
 
-        let [type, length] = config.type.split(":");
+        let [type, length] = config.type.split(':');
         
         switch (type) {
-        case "int":
-        case "bigint":
-        case "mediumint":
-        case "smallint":
-        case "tinyint":
+        case 'int':
+        case 'bigint':
+        case 'mediumint':
+        case 'smallint':
+        case 'tinyint':
             res.push(type);
             
             if (config.unsigned) {
-                res.push("unsigned");
+                res.push('unsigned');
             }
 
             if (!config.default && !config.autoInc) {
@@ -139,56 +135,56 @@ class MySql {
             }
             
             break;
-        case "string":
+        case 'string':
             if (!length) {
                 length = 255;
             }
             
-            res.push("varchar(" + length + ")");
+            res.push('varchar(' + length + ')');
 
             if (!config.default) {
                 if (config.nullable) {
                     config.default = null;
                 } else {
-                    config.default = "";
+                    config.default = '';
                 }
             }
             
             break;
-        case "timestamp":
-            res.push("timestamp");
+        case 'timestamp':
+            res.push('timestamp');
 
             if (config.autoSetTimestamp) {
                 delete config.default;
                 
-                res.push("DEFAULT CURRENT_TIMESTAMP");
+                res.push('DEFAULT CURRENT_TIMESTAMP');
             }
             
             if (config.autoUpdateTimestamp) {
-                res.push("ON UPDATE CURRENT_TIMESTAMP");
+                res.push('ON UPDATE CURRENT_TIMESTAMP');
             }
             break;
         default:
-            throw new Error("Unknown type for field: " + field + " - " + type);
+            throw new Error('Unknown type for field: ' + field + ' - ' + type);
         }
         
         if (!config.nullable) {
-            res.push("NOT NULL");
+            res.push('NOT NULL');
         }
 
-        if (typeof config.default !== "undefined") {
+        if (typeof config.default !== 'undefined') {
             if (config.default === null) {
-                res.push("DEFAULT NULL");
+                res.push('DEFAULT NULL');
             } else {
-                res.push("DEFAULT '" + config.default + "'");
+                res.push('DEFAULT \'' + config.default + '\'');
             }
         }
         
         if (config.autoInc) {
-            res.push("AUTO_INCREMENT");
+            res.push('AUTO_INCREMENT');
         }
 
-        return res.join(" ");
+        return res.join(' ');
     }
 
     outputKeySchema(field, config) {
@@ -197,13 +193,13 @@ class MySql {
         }
         
         switch (config.key) {
-        case "primary":
-            return "PRIMARY KEY (`" + field + "`)";
-        case "unique":
-            return "UNIQUE KEY `" + field + "` (`" + field + "`)";
+        case 'primary':
+            return 'PRIMARY KEY (`' + field + '`)';
+        case 'unique':
+            return 'UNIQUE KEY `' + field + '` (`' + field + '`)';
         }
         
-        return "KEY `" + field + "` (`" + field + "`)";
+        return 'KEY `' + field + '` (`' + field + '`)';
     }
 
     outputMultiKeySchema(name, config) {
@@ -218,15 +214,15 @@ class MySql {
         }
         
         switch (type) {
-        case "unique":
-            return "UNIQUE KEY `" + name + "` (`" + fields.join("`,`") + "`)";
+        case 'unique':
+            return 'UNIQUE KEY `' + name + '` (`' + fields.join('`,`') + '`)';
         }
         
-        return "KEY `" + name + "` (`" + fields.join("`,`") + "`)";
+        return 'KEY `' + name + '` (`' + fields.join('`,`') + '`)';
     }
 
     outputForeignKeySchema(tableName, relatedTableName, cnt) {
-        return "CONSTRAINT `" + tableName + "_ibfk_" + cnt + "` FOREIGN KEY (`" + relatedTableName + "_id`) REFERENCES `" + relatedTableName + "` (`id`) ON DELETE CASCADE ON UPDATE CASCADE";
+        return 'CONSTRAINT `' + tableName + '_ibfk_' + cnt + '` FOREIGN KEY (`' + relatedTableName + '_id`) REFERENCES `' + relatedTableName + '` (`id`) ON DELETE CASCADE ON UPDATE CASCADE';
     }
 
 }

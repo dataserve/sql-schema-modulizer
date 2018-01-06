@@ -1,61 +1,64 @@
-"use strict";
+'use strict';
 
-const _array = require("lodash/array");
-const _object = require("lodash/object");
-const path = require("path");
+const _array = require('lodash/array');
+const _object = require('lodash/object');
+const path = require('path');
 
-const MySql = require("./mysql");
+const MySql = require('./mysql');
 
-const TABLE_DEFAULTS = {
-    charset: "utf8",
-    engine: "InnoDB",
-};
+const TABLE_MIDDLEWARE = '';
+
+const TABLE_CHARSET = 'utf8';
+
+const TABLE_ENGINE = 'InnoDB';
 
 const TIMESTAMP_DEFAULTS = {
     modified: {
-        name: "mtime",
-        type: "timestamp",
+        name: 'mtime',
+        type: 'timestamp',
         autoSetTimestamp: true,
         autoUpdateTimestamp: true,
     },
     created: {
-        name: "ctime",
-        type: "timestamp",
+        name: 'ctime',
+        type: 'timestamp',
         autoSetTimestamp: true,
     },
 };
 
 const FIELD_DEFAULTS = {
     autoIncId: {
-        type: "int",
-        key: "primary",
+        type: 'int',
+        key: 'primary',
         autoInc: true,
-        unsigned: true
+        unsigned: true,
     },
     primaryId: {
-        type: "int",
-        key: "primary",
-        unsigned: true
+        type: 'int',
+        key: 'primary',
+        unsigned: true,
     },
     foreignId: {
-        type: "int",
+        type: 'int',
         key: true,
-        unsigned: true
+        unsigned: true,
     },
     string: {
-        type: "string:255",
-        default: ""
+        type: 'string:255',
+        default: '',
     },
 };
 
 const CASCADE_DOWN_FIELDS = {
-    tableDefaults: TABLE_DEFAULTS,
+    middleware: TABLE_MIDDLEWARE,
+    charset: TABLE_CHARSET,
+    engine: TABLE_ENGINE,
     timestamps: TIMESTAMP_DEFAULTS,
     fieldDefaults: FIELD_DEFAULTS,
 };
 
-function loadJson(path) {
-    return JSON.parse(JSON.stringify(require(path)));
+function jsonClone(str) {
+    return JSON.parse(JSON.stringify(str));
 }
 
 class SqlSchemaModulizer {
@@ -72,58 +75,58 @@ class SqlSchemaModulizer {
         this.built = false;
 
         if (!dbType) {
-            dbType = "mysql";
+            dbType = 'mysql';
         }
 
         //TODO: add support for postgresql
         switch (dbType.toLowerCase()) {
-        case "mysql":
+        case 'mysql':
             this.db = new MySql();
             
             break;
         default:
-            throw new Error("dbType not supported");
+            throw new Error('dbType not supported');
         }
     }
 
     buildFromPath(configPath) {
         if (this.built) {
-            throw new Error("Schema already built!");
+            throw new Error('Schema already built!');
         }
             
         this.configDir = path.dirname(configPath);
-        
-        this.config = loadJson(configPath);
+
+        this.config = jsonClone(require(configPath));
 
         this.build();
     }
 
     buildFromObject(config, modules) {
         if (this.built) {
-            throw new Error("Schema already built!");
+            throw new Error('Schema already built!');
         }
 
-        this.config = config ? JSON.parse(JSON.stringify(config)) : {};
+        this.config = config ? jsonClone(config) : {};
 
-        this.modules = modules ? JSON.parse(JSON.stringify(modules)) : {};
+        this.modules = modules ? jsonClone(modules) : {};
 
         this.build();
     }
 
     getModuleContents(moduleName) {
-        moduleName = moduleName.split("|")[0];
+        moduleName = moduleName.split('|')[0];
         
         if (this.modules[moduleName]) {
-            return JSON.parse(JSON.stringify(this.modules[moduleName]));
+            return jsonClone(this.modules[moduleName]);
         }
 
         if (this.configDir) {
-            let modulePath = this.configDir + "/module" + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+            let modulePath = this.configDir + '/module' + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
 
-            return loadJson(modulePath);
+            return jsonClone(require(modulePath));
         }
 
-        throw new Error("module not found: " + moduleName);
+        throw new Error('module not found: ' + moduleName);
     }
 
     build() {
@@ -135,19 +138,19 @@ class SqlSchemaModulizer {
             let enable = null;
             
             if (this.config[dbName].enable) {
-                enable = "^" + this.config[dbName].enable.split("*").join(".*") + "$";
+                enable = '^' + this.config[dbName].enable.split('*').join('.*') + '$';
             } else if (this.config[dbName].disable) {
-                enable = "^((?!" + this.config[dbName].disable.split("*").join(".*") + ").)*$";
+                enable = '^((?!' + this.config[dbName].disable.split('*').join('.*') + ').)*$';
             }
 
             if (enable) {
-                enable = new RegExp(enable, "i");
+                enable = new RegExp(enable, 'i');
             }
 
             let cascadeDown = {};
 
             for (let cascadeField in CASCADE_DOWN_FIELDS) {
-                cascadeDown[cascadeField] = typeof this.config[dbName][cascadeField] !== "undefined"
+                cascadeDown[cascadeField] = typeof this.config[dbName][cascadeField] !== 'undefined'
                     ? this.config[dbName][cascadeField] : CASCADE_DOWN_FIELDS[cascadeField];
             }
 
@@ -171,7 +174,7 @@ class SqlSchemaModulizer {
         let cascadeVars = {};
 
         for (let cascadeField in CASCADE_DOWN_FIELDS) {
-            if (typeof cascadeDown[cascadeField] !== "undefined") {
+            if (typeof cascadeDown[cascadeField] !== 'undefined') {
                 cascadeVars[cascadeField] = cascadeDown[cascadeField];
             }
         }
@@ -202,24 +205,24 @@ class SqlSchemaModulizer {
 
             let tmpParentTableNamePrepend = parentTableNamePrepend;
             
-            let moduleSplit = module.split(":"), modulePrepended = null;
+            let moduleSplit = module.split(':'), modulePrepended = null;
             
             let moduleName = moduleSplit[0], tableNamePrepend = moduleSplit[1];
 
-            let moduleNameSplit = moduleName.split("|");
+            let moduleNameSplit = moduleName.split('|');
 
             if (tableNamePrepend) {
                 if (!tmpParentTableNamePrepend) {
-                    tmpParentTableNamePrepend = "";
+                    tmpParentTableNamePrepend = '';
                 } else {
-                    tmpParentTableNamePrepend += "_";
+                    tmpParentTableNamePrepend += '_';
                 }
                 
                 tmpParentTableNamePrepend += tableNamePrepend;
             }
 
             if (tmpParentTableNamePrepend) {
-                modulePrepended = moduleName + ":" + tmpParentTableNamePrepend;
+                modulePrepended = moduleName + ':' + tmpParentTableNamePrepend;
             } else {
                 modulePrepended = module;
             }
@@ -279,7 +282,7 @@ class SqlSchemaModulizer {
         let parentModuleName, parentTableName;
         
         if (parentModule) {
-            let parentModuleSplit = parentModule.split(":")[0].split("|");
+            let parentModuleSplit = parentModule.split(':')[0].split('|');
 
             parentModuleName = parentModuleSplit[1] || parentModuleSplit[0];
         }
@@ -293,7 +296,7 @@ class SqlSchemaModulizer {
 
             let tmpParentTableNamePrepend = parentTableNamePrepend;
             
-            let moduleSplit = module.split(":"), modulePrepended = null;
+            let moduleSplit = module.split(':'), modulePrepended = null;
             
             let moduleName = moduleSplit[0], tableNamePrepend = moduleSplit[1];
 
@@ -301,24 +304,24 @@ class SqlSchemaModulizer {
                 if (!tmpParentTableNamePrepend) {
                     tmpParentTableNamePrepend = parentModuleName;
                 } else {
-                    tmpParentTableNamePrepend += "_" + parentModuleName;
+                    tmpParentTableNamePrepend += '_' + parentModuleName;
                 }
             }
             
             if (tmpParentTableNamePrepend) {
                 if (tableNamePrepend) {
-                    tmpParentTableNamePrepend += "_" + tableNamePrepend;
+                    tmpParentTableNamePrepend += '_' + tableNamePrepend;
                 }
                 
-                modulePrepended = moduleName + ":" + tmpParentTableNamePrepend;
+                modulePrepended = moduleName + ':' + tmpParentTableNamePrepend;
             } else {
                 modulePrepended = module;
             }
             
             if (this.tree[dbName][modulePrepended]) {
-                _object.merge(this.tree[dbName][modulePrepended], config[module], {parentModule});
+                _object.merge(this.tree[dbName][modulePrepended], config[module], { parentModule });
             } else {
-                this.tree[dbName][modulePrepended] = _object.merge({}, config[module], {parentModule});
+                this.tree[dbName][modulePrepended] = _object.merge({}, config[module], { parentModule });
             }
 
             let moduleContents = this.getModuleContents(moduleName), childrenModules = [];
@@ -356,20 +359,20 @@ class SqlSchemaModulizer {
     }    
 
     setPassThruTableName(passThruTableName, moduleContents) {
-        for (let field of ["extends", "imports"]) {
+        for (let field of ['extends', 'imports']) {
             for (let module in moduleContents[field]) {
-                let moduleSplit = module.split(":");
+                let moduleSplit = module.split(':');
                 
                 let moduleName = moduleSplit[0], tableNamePrepend = moduleSplit[1];
 
-                let moduleNameSplit = moduleName.split("|");
+                let moduleNameSplit = moduleName.split('|');
 
                 moduleName = moduleNameSplit[0];
 
-                let newModuleName = moduleName + "|" + passThruTableName;
+                let newModuleName = moduleName + '|' + passThruTableName;
 
                 if (tableNamePrepend) {
-                    newModuleName += ":" + tableNamePrepend;
+                    newModuleName += ':' + tableNamePrepend;
                 }
 
                 moduleContents[field][newModuleName] = moduleContents[field][module];
@@ -400,7 +403,7 @@ class SqlSchemaModulizer {
         let cascadeDownTmp = Object.assign({}, cascadeDown);
 
         for (let cascadeField in CASCADE_DOWN_FIELDS) {
-            if (typeof moduleContents[cascadeField] !== "undefined") {
+            if (typeof moduleContents[cascadeField] !== 'undefined') {
                 cascadeDownTmp[cascadeField] = moduleContents[cascadeField];
             }
         }
@@ -430,18 +433,18 @@ class SqlSchemaModulizer {
             }
 
             for (let cascadeField in CASCADE_DOWN_FIELDS) {
-                if (typeof opt[cascadeField] !== "undefined") {
+                if (typeof opt[cascadeField] !== 'undefined') {
                     cascadeVars[cascadeField] = opt[cascadeField];
                 }
             }
 
-            let [moduleName, tableNamePrepend] = module.split(":");
+            let [moduleName, tableNamePrepend] = module.split(':');
 
-            let moduleNameSplit = moduleName.split("|");
+            let moduleNameSplit = moduleName.split('|');
 
             moduleName = moduleNameSplit[0];
 
-            let updatedTableName = moduleNameSplit[1] || "";
+            let updatedTableName = moduleNameSplit[1] || '';
 
             let moduleContents = this.getModuleContents(moduleName);
             
@@ -471,7 +474,7 @@ class SqlSchemaModulizer {
                 }
                 
                 if (tableNamePrepend) {
-                    tableName = tableNamePrepend + "_" + tableName;
+                    tableName = tableNamePrepend + '_' + tableName;
                 }
 
                 if (enable && !tableName.match(enable)) {
@@ -541,12 +544,12 @@ class SqlSchemaModulizer {
         let tmpParentTables = {};
         
         for (let table in parentTables) {            
-            tmpParentTables["^" + table] = parentTables[table];
+            tmpParentTables['^' + table] = parentTables[table];
         }
 
         if (defaultParentTable) {
             //default table, needs to be last for string replace order
-            tmpParentTables["^"] = defaultParentTable;
+            tmpParentTables['^'] = defaultParentTable;
         }
         
         parentTables = tmpParentTables;
@@ -554,7 +557,7 @@ class SqlSchemaModulizer {
         let tmpSiblingTables = {};
         
         for (let table in siblingTables) {
-            tmpSiblingTables["$" + table] = siblingTables[table];
+            tmpSiblingTables['$' + table] = siblingTables[table];
         }
         
         siblingTables = tmpSiblingTables;
@@ -562,7 +565,7 @@ class SqlSchemaModulizer {
         let tmpChildrenTables = {};
 
         for (let table in childrenTables) {
-            tmpChildrenTables[">" + table] = childrenTables[table];
+            tmpChildrenTables['>' + table] = childrenTables[table];
         }
         
         childrenTables = tmpChildrenTables;
@@ -656,9 +659,9 @@ class SqlSchemaModulizer {
             for (let field in table.fields) {
                 let fieldVal = table.fields[field];
 
-                if (typeof fieldVal === "string") {
+                if (typeof fieldVal === 'string') {
                     table.fields[field] = fieldVal = {
-                        "type": fieldVal,
+                        'type': fieldVal,
                     };
                 }
 
@@ -672,7 +675,14 @@ class SqlSchemaModulizer {
                     continue;
                 }
 
-                let type = fieldDefaults[fieldVal.type].type;
+                let [origType, extra] = fieldVal.type.split(':');
+                
+                let type = fieldDefaults[origType].type;
+
+                //specify custom overrides fieldDefault
+                if (extra) {
+                    type = type.split(':')[0] + ':' + extra;
+                }
                 
                 table.fields[field] = _object.merge({}, fieldDefaults[fieldVal.type], fieldVal);
                 
@@ -693,32 +703,31 @@ class SqlSchemaModulizer {
 
     getDbConfig(dbName) {
         if (!this.config[dbName]) {
-            throw new Error("dbName '" + dbName + "' not found in config");
+            throw new Error(`dbName '${dbName}' not found in config`);
         }
         
         return this.config[dbName];
     }
 
     getDbSchema(dbName) {
-        if (!this.config[dbName]) {
-            throw new Error("dbName '" + dbName + "' not found in config");
-        }
-        
-        return this.db.getDbSchema(dbName, this.config[dbName]);
+        return this.db.getDbSchema(dbName, this.getDbConfig(dbName));
     }
 
-    getTableSchema(dbName, tableName) {
+
+    getTableConfig(dbName, tableName) {
         if (!this.config[dbName]) {
-            throw new Error("dbName '" + dbName + "' not found in config");
+            throw new Error(`dbName '${dbName}' not found in config`);
         }
 
         if (!this.config[dbName].tables || !this.config[dbName].tables[tableName]) {
-            throw new Error("tableName '" + tableName + "' not found in config");
+            throw new Error(`tableName '${tableName}' not found in config`);
         }
 
-        let tableConfig = this.config[dbName].tables[tableName];
-        
-        return this.db.getTableSchema(tableName, tableConfig);
+        return this.config[dbName].tables[tableName];
+    }
+    
+    getTableSchema(dbName, tableName) {
+        return this.db.getTableSchema(tableName, this.getTableConfig(dbName, tableName));
     }
 }
 
