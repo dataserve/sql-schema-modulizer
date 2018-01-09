@@ -16,7 +16,9 @@ npm install sql-schema-modulizer
 ```js
 const SqlSchemaModulizer = require("sql-schema-modulizer");
 
-var modulizer = new SqlSchemaModulizer({
+var modulizer = new SqlSchemaModulizer();
+
+modulizer.buildFromObject({
     "dbName": {
         "tables": {
             "user": {
@@ -118,6 +120,8 @@ let moduleConfig = {
         }
     }
 };
+
+var modulizer = new SqlSchemaModulizer();
 
 modulizer.buildFromObject(dbConfig, moduleConfig);
 

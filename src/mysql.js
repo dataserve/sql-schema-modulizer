@@ -114,45 +114,75 @@ class MySql {
 
         let [type, length] = config.type.split(':');
         
+        if (type === 'string') {
+            type = 'varchar';
+        }
+
         switch (type) {
         case 'int':
         case 'bigint':
         case 'mediumint':
         case 'smallint':
         case 'tinyint':
-            res.push(type);
+        case 'float':
+        case 'double':
+        case 'decimal':
+            if (length) {
+                res.push(`${type}(${length})`);
+            } else {
+                res.push(type);
+            }
             
             if (config.unsigned) {
                 res.push('unsigned');
             }
 
-            if (!config.default && !config.autoInc) {
-                if (config.nullable) {
-                    config.default = null;
-                } else {
-                    config.default = 0;
-                }
-            }
-            
+            this.populateDefault(config, '0')
+
             break;
-        case 'string':
+        case 'varchar':
+        case 'char':
             if (!length) {
                 length = 255;
             }
             
-            res.push('varchar(' + length + ')');
+            res.push(`${type}(${length})`);
 
-            if (!config.default) {
-                if (config.nullable) {
-                    config.default = null;
-                } else {
-                    config.default = '';
-                }
-            }
+            this.populateDefault(config, '');
             
             break;
+        case 'text':
+        case 'tinytext':
+        case 'text':
+        case 'mediumtext':
+        case 'longtext':
+            res.push(type);
+            
+            break;
+        case 'enum':
+        case 'set':
+            res.push(`${type}('${length.split(",").join("','")}')`);
+
+            this.populateDefault(config, '');
+            
+            break;
+        case 'date':
+            res.push(type);
+
+            this.populateDefault(config, '00-00-00');
+
+            break;
+        case 'time':
+            res.push(type);
+
+            this.populateDefault(config, '00:00:00');
+            
+            break;
+        case 'datetime':
         case 'timestamp':
-            res.push('timestamp');
+            res.push(type);
+
+            this.populateDefault(config, '0000-00-00 00:00:00');
 
             if (config.autoSetTimestamp) {
                 delete config.default;
@@ -176,7 +206,7 @@ class MySql {
             if (config.default === null) {
                 res.push('DEFAULT NULL');
             } else {
-                res.push('DEFAULT \'' + config.default + '\'');
+                res.push('DEFAULT \'' + config.default.replace("'", "\'") + '\'');
             }
         }
         
@@ -185,6 +215,16 @@ class MySql {
         }
 
         return res.join(' ');
+    }
+
+    populateDefault(config, defaultValue) {
+        if (!config.default && !config.autoInc) {
+            if (config.nullable) {
+                config.default = null;
+            } else {
+                config.default = defaultValue;
+            }
+        }
     }
 
     outputKeySchema(field, config) {

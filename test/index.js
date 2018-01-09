@@ -12,7 +12,6 @@ describe("SqlSchemaModulizer Tests", function() {
             const dbName = "blog";
             
             const dbSql = modulizer.getDbSchema(dbName);
-            console.log(modulizer.getDbConfig(dbName));
 
             const tableNames = [
                 "blog",
@@ -581,7 +580,7 @@ describe("SqlSchemaModulizer Tests", function() {
         }
 
         try {
-            const modulizer = new SqlSchemaModulizer("postgresql");
+            const modulizer = new SqlSchemaModulizer({ dbType: "postgresql" });
 
             modulizer.buildFromObject(dbConfig);
             
@@ -666,9 +665,8 @@ describe("SqlSchemaModulizer Tests", function() {
             
             let dbSql = modulizer.getDbSchema(dbName);
 
-            console.log(dbSql);
-
             done(new Error("invalid module not triggered"));
+            
             return;
         } catch (err) {
             if (err.message.indexOf("module not found") === -1) {

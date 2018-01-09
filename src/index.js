@@ -6,8 +6,6 @@ const path = require('path');
 
 const MySql = require('./mysql');
 
-const TABLE_MIDDLEWARE = '';
-
 const TABLE_CHARSET = 'utf8';
 
 const TABLE_ENGINE = 'InnoDB';
@@ -44,13 +42,12 @@ const FIELD_DEFAULTS = {
         unsigned: true,
     },
     string: {
-        type: 'string:255',
+        type: 'varchar:255',
         default: '',
     },
 };
 
 const CASCADE_DOWN_FIELDS = {
-    middleware: TABLE_MIDDLEWARE,
     charset: TABLE_CHARSET,
     engine: TABLE_ENGINE,
     timestamps: TIMESTAMP_DEFAULTS,
@@ -63,7 +60,10 @@ function jsonClone(str) {
 
 class SqlSchemaModulizer {
 
-    constructor(dbType) {
+    // opt { dbType: "mysql", cascadeDown: { field: fieldDefaults } }
+    constructor(opt) {
+        this.opt = opt || {};
+        
         this.config = {};
 
         this.configDir = null;
@@ -74,18 +74,24 @@ class SqlSchemaModulizer {
 
         this.built = false;
 
-        if (!dbType) {
-            dbType = 'mysql';
+        if (!this.opt.dbType) {
+            this.opt.dbType = 'mysql';
         }
 
         //TODO: add support for postgresql
-        switch (dbType.toLowerCase()) {
+        switch (this.opt.dbType.toLowerCase()) {
         case 'mysql':
             this.db = new MySql();
             
             break;
         default:
             throw new Error('dbType not supported');
+        }
+
+        this.cascadeDownFields = CASCADE_DOWN_FIELDS;
+        
+        if (this.opt.cascadeDown) {
+            this.cascadeDownFields = _object.assign({}, this.cascadeDownFields, this.opt.cascadeDown);
         }
     }
 
@@ -149,9 +155,9 @@ class SqlSchemaModulizer {
 
             let cascadeDown = {};
 
-            for (let cascadeField in CASCADE_DOWN_FIELDS) {
+            for (let cascadeField in this.cascadeDownFields) {
                 cascadeDown[cascadeField] = typeof this.config[dbName][cascadeField] !== 'undefined'
-                    ? this.config[dbName][cascadeField] : CASCADE_DOWN_FIELDS[cascadeField];
+                    ? this.config[dbName][cascadeField] : cascadeDown[cascadeField] || this.cascadeDownFields[cascadeField];
             }
 
             if (this.config[dbName].tables) {
@@ -173,7 +179,7 @@ class SqlSchemaModulizer {
     buildTables(dbName, enable, cascadeDown) {
         let cascadeVars = {};
 
-        for (let cascadeField in CASCADE_DOWN_FIELDS) {
+        for (let cascadeField in this.cascadeDownFields) {
             if (typeof cascadeDown[cascadeField] !== 'undefined') {
                 cascadeVars[cascadeField] = cascadeDown[cascadeField];
             }
@@ -240,7 +246,7 @@ class SqlSchemaModulizer {
             let passDown = this.extractPassDownVariables(config[module]);
             
             if (passDown.extends) {
-                _object.merge(moduleContents, {extends: passDown.extends});
+                _object.merge(moduleContents, { extends: passDown.extends });
             }
 
             let passThruTableName = null;
@@ -331,7 +337,7 @@ class SqlSchemaModulizer {
             let passDown = this.extractPassDownVariables(config[module]);
 
             if (passDown.extends) {
-                _object.merge(moduleContents, {extends: passDown.extends});
+                _object.merge(moduleContents, { extends: passDown.extends });
             }
 
             if (moduleContents.extends && Object.keys(moduleContents.extends).length) {
@@ -339,11 +345,11 @@ class SqlSchemaModulizer {
             }
 
             if (childrenModules.length) {
-                _object.merge(this.tree[dbName][modulePrepended], {childrenModules});
+                _object.merge(this.tree[dbName][modulePrepended], { childrenModules });
             }
 
             if (passDown.imports) {
-                _object.merge(moduleContents, {imports: passDown.imports});
+                _object.merge(moduleContents, { imports: passDown.imports });
             }
             
             if (moduleContents.imports && Object.keys(moduleContents.imports).length) {
@@ -402,7 +408,7 @@ class SqlSchemaModulizer {
     extractCascadeDownVariables(moduleContents, cascadeDown) {
         let cascadeDownTmp = Object.assign({}, cascadeDown);
 
-        for (let cascadeField in CASCADE_DOWN_FIELDS) {
+        for (let cascadeField in this.cascadeDownFields) {
             if (typeof moduleContents[cascadeField] !== 'undefined') {
                 cascadeDownTmp[cascadeField] = moduleContents[cascadeField];
             }
@@ -432,7 +438,7 @@ class SqlSchemaModulizer {
                 childrenModules = opt.childrenModules;
             }
 
-            for (let cascadeField in CASCADE_DOWN_FIELDS) {
+            for (let cascadeField in this.cascadeDownFields) {
                 if (typeof opt[cascadeField] !== 'undefined') {
                     cascadeVars[cascadeField] = opt[cascadeField];
                 }
