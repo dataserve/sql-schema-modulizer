@@ -54,6 +54,8 @@ const CASCADE_DOWN_FIELDS = {
     fieldDefaults: FIELD_DEFAULTS,
 };
 
+const CASCADE_EXPAND_FIELDS = {};
+
 function jsonClone(str) {
     return JSON.parse(JSON.stringify(str));
 }
@@ -92,6 +94,12 @@ class SqlSchemaModulizer {
         
         if (this.opt.cascadeDown) {
             this.cascadeDownFields = _object.assign({}, this.cascadeDownFields, this.opt.cascadeDown);
+        }
+
+        this.cascadeExpandFields = CASCADE_EXPAND_FIELDS;
+
+        if (this.opt.cascadeExpand) {
+            this.cascadeExpandFields = _object.assign({}, this.cascadeExpandFields, this.opt.cascadeExpand);
         }
     }
 
@@ -185,6 +193,12 @@ class SqlSchemaModulizer {
             }
         }
 
+        for (let cascadeField in this.cascadeExpandFields) {
+            if (typeof this.config[dbName][cascadeField] !== 'undefined') {
+                cascadeVars[cascadeField] = this.config[dbName][cascadeField];
+            }
+        }
+        
         for (let table in this.config[dbName].tables) {
             if (enable && !table.match(enable)) {
                 delete this.config[dbName].tables[table];
@@ -264,11 +278,11 @@ class SqlSchemaModulizer {
             }
 
             if (childrenModules.length) {
-                _object.merge(this.tree[dbName][modulePrepended], {childrenModules});
+                _object.merge(this.tree[dbName][modulePrepended], { childrenModules });
             }
 
             if (passDown.imports) {
-                _object.merge(moduleContents, {imports: passDown.imports});
+                _object.merge(moduleContents, { imports: passDown.imports });
             }
 
             if (moduleContents.imports && Object.keys(moduleContents.imports).length) {
@@ -456,6 +470,12 @@ class SqlSchemaModulizer {
             
             if (!moduleContents.tables || !Object.keys(moduleContents.tables).length) {
                 continue;
+            }
+
+            for (let cascadeField in this.cascadeExpandFields) {
+                if (typeof moduleContents[cascadeField] !== 'undefined') {
+                    cascadeVars[cascadeField] = moduleContents[cascadeField];
+                }
             }
   
             if (extendTables) {
