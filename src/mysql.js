@@ -176,6 +176,10 @@ class MySql {
             break;
         case 'enum':
         case 'set':
+            if (!length) {
+                throw new Error('Missing values for: ' + field + ' - ' + type + ' - format: `field:value1,value2,value3`');
+            }
+            
             res.push(`${type}('${length.split(",").join("','")}')`);
 
             this.populateDefault(config, '');
