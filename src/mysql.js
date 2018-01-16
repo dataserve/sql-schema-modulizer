@@ -4,7 +4,8 @@ const _object = require('lodash/object');
 
 class MySql {
 
-    constructor() {
+    constructor(modulizer) {
+        this.modulizer = modulizer;
     }
 
     getDbSchema(dbName, dbConfig) {
@@ -71,8 +72,22 @@ class MySql {
         if (belongsTo) {
             let cnt = 1;
             
-            for (let relatedTableName of belongsTo) {
-                defs.push('  ' + this.outputForeignKeySchema(tableName, relatedTableName, cnt));
+            for (let relatedTableConfig of belongsTo) {
+                let [ relatedTableName, relatedConfig ] = this.modulizer.relatedTable(relatedTableConfig);
+
+                relatedConfig = relatedConfig || '';
+                
+                let [ foreignColumnName, localColumnName ] = relatedConfig.split(',');
+
+                if (!foreignColumnName) {
+                    foreignColumnName = 'id';
+                }
+
+                if (!localColumnName) {
+                    localColumnName = relatedTableName + '_id';
+                }
+                
+                defs.push('  ' + this.outputForeignKeySchema(tableName, relatedTableName, foreignColumnName, localColumnName, cnt));
                 
                 ++cnt;
             }
@@ -261,8 +276,8 @@ class MySql {
         return 'KEY `' + name + '` (`' + fields.join('`,`') + '`)';
     }
 
-    outputForeignKeySchema(tableName, relatedTableName, cnt) {
-        return 'CONSTRAINT `' + tableName + '_ibfk_' + cnt + '` FOREIGN KEY (`' + relatedTableName + '_id`) REFERENCES `' + relatedTableName + '` (`id`) ON DELETE CASCADE ON UPDATE CASCADE';
+    outputForeignKeySchema(tableName, relatedTableName, foreignColumnName, localColumnName, cnt) {
+        return 'CONSTRAINT `' + tableName + '_ibfk_' + cnt + '` FOREIGN KEY (`' + localColumnName + '`) REFERENCES `' + relatedTableName + '` (`' + foreignColumnName + '`) ON DELETE CASCADE ON UPDATE CASCADE';
     }
 
 }

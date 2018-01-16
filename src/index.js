@@ -83,7 +83,7 @@ class SqlSchemaModulizer {
         //TODO: add support for postgresql
         switch (this.opt.dbType.toLowerCase()) {
         case 'mysql':
-            this.db = new MySql();
+            this.db = new MySql(this);
             
             break;
         default:
@@ -639,16 +639,30 @@ class SqlSchemaModulizer {
         if (relationships) {
             Object.keys(table.relationships).forEach((rel) => {
                 table.relationships[rel].forEach((tbl, index) => {
+                    let relatedConfig;
+                    
+                    [ tbl, relatedConfig ] = this.relatedTable(tbl);
+
                     let tblAssoc = this.associateTable(tbl, parentTables, siblingTables, childrenTables);
                     
                     if (tblAssoc === tbl) {
                         return;
+                    }
+
+                    if (relatedConfig) {
+                        tblAssoc += ':' + relatedConfig;
                     }
                     
                     relationships[rel][index] = tblAssoc;
                 });
             });
         }
+    }
+
+    relatedTable(config) {
+        let [ tableName, extra ] = config.split(':');
+
+        return [ tableName, extra ];
     }
 
     associateTable(str, parentTables, siblingTables, childrenTables) {
