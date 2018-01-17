@@ -402,7 +402,9 @@ Only table names matching the regex will be *shown* in SQL schema output. Suppor
 Only table names matching the regex will be *removed* in SQL schema output. Supports asterisk (*) and or (|)
 
 #### `<import object>`
-This is used to "import" a module into the current dependency tree. It acts as a drop in feature, it does not give any inheritence functionality between the required module and the parent module. An imported module takes on the same namespace as the place it was requested from. Note: If a module object is passed in, **it will be merged** with the full `<module object>` specified by `moduleName`.
+This is used to "import" a module into the current dependency tree. It acts as a drop in feature, it does not give any inheritence functionality between the required module and the parent module. An imported module takes on the same namespace as the place it was requested from.
+
+Note: If a module object is passed in, **it will be merged** with the full `<module object>` specified by `moduleName`.
 
 ```javascript
 {
@@ -413,7 +415,9 @@ This is used to "import" a module into the current dependency tree. It acts as a
 ```
 
 #### `<extends object>`
-This is used to "extend" the functionality of a module. Modules extended can reference fields in children modules and vice versa. The extendee will take on a sub namespace from the place it was requested from. Note: If a module object is passed in, **it will be merged** with the full `<module object>` specified by `moduleName`.
+This is used to "extend" the functionality of a module. Modules extended can reference fields in children modules and vice versa. The extendee will take on a sub namespace from the place it was requested from.
+
+Note: If a module object is passed in, **it will be merged** with the full `<module object>` specified by `moduleName`.
 
 ```javascript
 {
