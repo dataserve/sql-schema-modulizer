@@ -79,6 +79,10 @@ class MySql {
                 
                 let [ foreignColumnName, localColumnName ] = relatedConfig.split(',');
 
+                if (foreignColumnName === "null") {
+                    continue;
+                }
+
                 if (!foreignColumnName) {
                     foreignColumnName = 'id';
                 }
