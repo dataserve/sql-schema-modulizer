@@ -389,8 +389,8 @@ There are two types of configuration styles. One defines all your tables directl
   "imports": <imports object>,
   "charset": <cascading charset string (default: utf8)>,
   "engine": <cascading engine string (default: InnoDB)>,
-  "timestamps": <cascading timestamps object ([default](https://github.com/dataserve/sql-schema-modulizer/blob/master/src/index.js#L13))>,
-  "customFields": <cascading customFields object ([default](https://github.com/dataserve/sql-schema-modulizer/blob/master/src/index.js#L27))>,
+  "timestamps": <cascading timestamps object>,
+  "customFields": <cascading customFields object>,
   "tables": <tables object>
 }
 ```
@@ -462,6 +462,8 @@ You can use this to set the table storage engines (InnoDB, MyISAM, MEMORY, etc).
 #### default `<cascading timestamps object>`
 Set this to null to disable the timestamps functionality or to create your own. When this is placed in the dependency tree, all modules "imported" and "extended" below it will use these values.
 
+[sourcecode](https://github.com/dataserve/sql-schema-modulizer/blob/master/src/index.js#L13)
+
 ```javascript
 {
   created: {
@@ -480,6 +482,8 @@ Set this to null to disable the timestamps functionality or to create your own. 
 
 #### default `<cascading customFields object>`
 You can use this to create custom field type "macros". When this is placed in the dependency tree, all tables & modules "imported" and "extended" below it will use these values.
+
+[sourcecode](https://github.com/dataserve/sql-schema-modulizer/blob/master/src/index.js#L27)
 
 ```javascript
 {
