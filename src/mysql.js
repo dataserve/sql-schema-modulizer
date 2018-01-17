@@ -47,6 +47,10 @@ class MySql {
 
         if (timestamps) {
             for (let field in timestamps) {
+                if (!timestamps[field]) {
+                    continue;
+                }
+                
                 defs.push('  ' + this.outputFieldSchema(timestamps[field].name, timestamps[field]));
             }
         }

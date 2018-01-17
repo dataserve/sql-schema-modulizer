@@ -24,7 +24,7 @@ const TIMESTAMP_DEFAULTS = {
     },
 };
 
-const FIELD_DEFAULTS = {
+const CUSTOM_FIELDS_DEFAULTS = {
     autoIncId: {
         type: 'int',
         key: 'primary',
@@ -51,7 +51,7 @@ const CASCADE_DOWN_FIELDS = {
     charset: TABLE_CHARSET,
     engine: TABLE_ENGINE,
     timestamps: TIMESTAMP_DEFAULTS,
-    fieldDefaults: FIELD_DEFAULTS,
+    customFields: CUSTOM_FIELDS_DEFAULTS,
 };
 
 const CASCADE_EXPAND_FIELDS = {};
@@ -62,7 +62,7 @@ function jsonClone(str) {
 
 class SqlSchemaModulizer {
 
-    // opt { dbType: "mysql", cascadeDown: { field: fieldDefaults } }
+    // opt { dbType: "mysql", cascadeDown: { field: customFields } }
     constructor(opt) {
         this.opt = opt || {};
         
@@ -178,7 +178,7 @@ class SqlSchemaModulizer {
                 this.buildModules(dbName, enable);
             }
 
-            this.mergeTableDefaults(dbName);
+            this.mergeCustomFields(dbName);
         }
 
         this.built = true;
@@ -258,7 +258,7 @@ class SqlSchemaModulizer {
             let cascadeDownTmp = this.extractCascadeDownVariables(moduleContents, cascadeDown);
             
             let passDown = this.extractPassDownVariables(config[module]);
-            
+
             if (passDown.extends) {
                 _object.merge(moduleContents, { extends: passDown.extends });
             }
@@ -288,8 +288,8 @@ class SqlSchemaModulizer {
             if (moduleContents.imports && Object.keys(moduleContents.imports).length) {
                 this.buildModuleImports(dbName, moduleContents.imports, tmpParentTableNamePrepend, cascadeDownTmp);
             }
-
-            _object.merge(this.tree[dbName][modulePrepended], cascadeDownTmp);
+            
+            this.tree[dbName][modulePrepended] = _object.merge({}, cascadeDownTmp, this.tree[dbName][modulePrepended]);
         }
     }
 
@@ -372,7 +372,7 @@ class SqlSchemaModulizer {
 
             retChildrenModules.push(modulePrepended);
 
-            _object.merge(this.tree[dbName][modulePrepended], cascadeDownTmp);
+            this.tree[dbName][modulePrepended] = _object.merge({}, cascadeDownTmp, this.tree[dbName][modulePrepended]);
         }
 
         return retChildrenModules;
@@ -438,6 +438,7 @@ class SqlSchemaModulizer {
             let opt = this.tree[dbName][module] || {};
             
             let extendTables = {}, parentModule = null, childrenModules = null;
+            
             let cascadeVars = {};
             
             if (opt.tables) {
@@ -458,7 +459,7 @@ class SqlSchemaModulizer {
                 }
             }
 
-            let [moduleName, tableNamePrepend] = module.split(':');
+            let [ moduleName, tableNamePrepend ] = module.split(':');
 
             let moduleNameSplit = moduleName.split('|');
 
@@ -692,7 +693,7 @@ class SqlSchemaModulizer {
         return str;
     }
 
-    mergeTableDefaults(dbName) {
+    mergeCustomFields(dbName) {
         for (let tableName in this.config[dbName].tables) {
             let table = this.config[dbName].tables[tableName];
             
@@ -705,26 +706,26 @@ class SqlSchemaModulizer {
                     };
                 }
 
-                let fieldDefaults = table.fieldDefaults;
+                let customFields = table.customFields;
                 
-                if (!fieldDefaults) {
+                if (!customFields) {
                     continue;
                 }
 
-                if (!fieldDefaults[fieldVal.type]) {
+                if (!customFields[fieldVal.type]) {
                     continue;
                 }
 
-                let [origType, extra] = fieldVal.type.split(':');
+                let [ origType, extra ] = fieldVal.type.split(':');
                 
-                let type = fieldDefaults[origType].type;
+                let type = customFields[origType].type;
 
                 //specify custom overrides fieldDefault
                 if (extra) {
                     type = type.split(':')[0] + ':' + extra;
                 }
                 
-                table.fields[field] = _object.merge({}, fieldDefaults[fieldVal.type], fieldVal);
+                table.fields[field] = _object.merge({}, customFields[fieldVal.type], fieldVal);
                 
                 table.fields[field].type = type;
 
