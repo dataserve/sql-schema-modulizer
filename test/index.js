@@ -1,8 +1,38 @@
 "use strict";
 
+const fs = require('fs');
+const path = require('path');
 const SqlSchemaModulizer = require("../index");
 
 describe("SqlSchemaModulizer Tests", function() {
+    it("Run README examples", function(done) {
+        const dbName = 'dbName';
+        
+        for (let example of [ "One", "Two", "Three" ]) {
+            try {
+                let modulizer = new SqlSchemaModulizer();
+
+                let dir = path.resolve(__dirname + "/../config/example" + example);
+
+                modulizer.buildFromPath(path.join(dir, "config"));
+
+                let dbSql = modulizer.getDbSchema(dbName).trim();
+
+                let result = fs.readFileSync(path.join(dir, "result.sql"), "utf8").trim();
+
+                if (dbSql !== result) {
+                    done(new Error("MISMATCH: example" + example));
+                    return;
+                }
+            } catch (err) {
+                done(err);
+                return;
+            }
+        }
+        
+        done();
+    });
+
     it("Example Blog Table Names", function(done) {
         try {
             const modulizer = new SqlSchemaModulizer();
@@ -369,7 +399,7 @@ describe("SqlSchemaModulizer Tests", function() {
                 "timestamps": null,
                 "charset": null,
                 "engine": null,
-                "fieldDefaults": null,
+                "customFields": null,
             }
         }
 
@@ -381,7 +411,7 @@ describe("SqlSchemaModulizer Tests", function() {
                 "timestamps": null,
                 "charset": null,
                 "engine": null,
-                "fieldDefaults": null,
+                "customFields": null,
             }
         }
         
@@ -420,7 +450,7 @@ describe("SqlSchemaModulizer Tests", function() {
                         "autoSetTimestamp": true,
                     },
                 },
-                "fieldDefaults": {
+                "customFields": {
                     "autoIncId": {
                         "type": "smallint",
                         "key": "primary",
@@ -450,7 +480,7 @@ describe("SqlSchemaModulizer Tests", function() {
                         "autoUpdateTimestamp": true,
                     },
                 },
-                "fieldDefaults": {
+                "customFields": {
                     "autoIncId": {
                         "type": "bigint",
                         "unsigned": true

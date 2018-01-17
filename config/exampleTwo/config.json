@@ -1,0 +1,46 @@
+{
+    "dbName": {
+        "imports": {
+            "user|user1": {
+                "engine": "InnoDB",
+                "tables": {
+                    "user": {
+                        "fields": {
+                            "type": "adminEnum"
+                        }
+                    }
+                }
+            },
+            "user|user2": {
+                "charset": "utf8",
+                "timestamps": {
+                    "modified": null,
+                    "created": {
+                        "name": "created_at",
+                        "type": "datetime",
+                        "autoSetTimestamp": true
+                    }
+                }
+            }
+        },
+        "engine": "MyISM",
+        "charset": "latin1_swedish_ci",
+        "timestamps": null,
+        "customFields": {
+            "autoIncId": {
+                "type": "int",
+                "unsigned": true,
+                "autoInc": true,
+                "key": "primary"
+            },
+            "unsignedInt": {
+                "type": "int",
+                "unsigned": true
+            },
+            "adminEnum": {
+                "type": "enum:USER,ADMIN",
+                "default": "USER"
+            }
+        }
+    }
+}

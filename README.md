@@ -16,7 +16,7 @@ npm install sql-schema-modulizer
 ```js
 const SqlSchemaModulizer = require("sql-schema-modulizer");
 
-var modulizer = new SqlSchemaModulizer();
+const modulizer = new SqlSchemaModulizer();
 
 modulizer.buildFromObject({
     "dbName": {
@@ -52,12 +52,113 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
 
-### Example Using Modules as Building Blocks
+### Simple Example Using Modules & Cascade Down Fields
+
+There are 4 fields that cascade down the configuration tree: charset, engine, timestamps, customFields
+                 
+```js
+const SqlSchemaModulizer = require("sql-schema-modulizer");
+
+const modulizer = new SqlSchemaModulizer();
+
+const dbConfig = {
+    "dbName": {
+        "imports": {
+            "user|user1": {
+                "engine": "InnoDB",
+                "tables": {
+                    "user": {
+                        "fields": {
+                            "type": "adminEnum"
+                        }
+                    }
+                }
+            },
+            "user|user2": {
+                "charset": "utf8",
+                "timestamps": {
+                    "modified": null,
+                    "created": {
+                        "name": "created_at",
+                        "type": "datetime",
+                        "autoSetTimestamp": true
+                    }
+                }
+            }
+        },
+        "engine": "MyISM",
+        "charset": "latin1_swedish_ci",
+        "timestamps": null,
+        "customFields": {
+            "autoIncId": {
+                "type": "int",
+                "unsigned": true,
+                "autoInc": true,
+                "key": "primary"
+            },
+            "unsignedInt": {
+                "type": "int",
+                "unsigned": true
+            },
+            "adminEnum": {
+                "type": "enum:USER,ADMIN",
+                "default": "USER"
+            }
+        }
+    }
+};
+
+const moduleConfig = {
+    "user": {
+        "tables": {
+            "user": {
+                "fields": {
+                    "id": {
+                        "type": "autoIncId"
+                    },
+                    "name": {
+                        "type": "string:255",
+                        "key": "unique"
+                    },
+                    "password": "string:128"
+                }
+            }
+        }
+    }
+};
+                 
+modulizer.buildFromObject(dbConifg, moduleConfig);
+
+console.log(modulizer.getDbSchema("dbName"));
+
+// Outputs
+CREATE DATABASE dbName;
+
+CREATE TABLE `user1` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL DEFAULT '',
+  `password` varchar(128) NOT NULL DEFAULT '',
+  `type` enum('USER','ADMIN') NOT NULL DEFAULT 'USER',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1_swedish_ci;
+
+CREATE TABLE `user2` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL DEFAULT '',
+  `password` varchar(128) NOT NULL DEFAULT '',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=MyISM DEFAULT CHARSET=utf8;
+```
+
+### Advanced Example Using Modules as Building Blocks
 
 ```js
 const SqlSchemaModulizer = require("sql-schema-modulizer");
 
-let dbConfig = {
+const dbConfig = {
     "dbName": {
         "imports": {
             "commentGuest": null,
@@ -68,7 +169,7 @@ let dbConfig = {
     }
 }
 
-let moduleConfig = {
+const moduleConfig = {
     "commentGuest": {
         "tables": {
             "comment_guest": {
@@ -108,7 +209,7 @@ let moduleConfig = {
                         "type": "int",
                         "key": true
                     },
-                    "comment": "string:512",
+                    "comment": "string:512"
                 },
                 "relationships": {
                     "belongsTo": [
@@ -121,7 +222,7 @@ let moduleConfig = {
     }
 };
 
-var modulizer = new SqlSchemaModulizer();
+const modulizer = new SqlSchemaModulizer();
 
 modulizer.buildFromObject(dbConfig, moduleConfig);
 
@@ -238,9 +339,10 @@ There are two types of configuration styles. One defines all your tables directl
   "enable": <enable string match>,
   "disable": <!(enable string match)>,
   "imports": <imports object>,
-  "tableDefaults": <cascading tableDefaults object>,
-  "timestamps": <cascading timestamps object>,
-  "fieldDefaults": <cascading fieldDefaults object>,
+  "charset": <cascading charset string (default: utf8)>,
+  "engine": <cascading engine string (default: InnoDB)>,
+  "timestamps": <cascading timestamps object ([default](https://github.com/dataserve/sql-schema-modulizer/blob/master/src/index.js#L13))>,
+  "customFields": <cascading customFields object ([default](https://github.com/dataserve/sql-schema-modulizer/blob/master/src/index.js#L27))>,
   "tables": <tables object>
 }
 ```
@@ -281,26 +383,31 @@ This is used to specify a module. It can be in it's own file `config/module[Modu
   "<moduleName>": {
     "extends": <extends object>,
     "imports": <imports object>,
-    "tableDefaults": <cascading tableDefaults object>,
+    "charset": <cascading charset string>,
+    "engine": <cascading engine string>,
     "timestamps": <cascading timestamps object>,
-    "fieldDefaults": <cascading fieldDefaults object>,
+    "customFields": <cascading customFields object>,
     "tables": <tables object>
   }
 }
 ```
 
-#### `<cascading tableDefaults object>`
-You can use this to set DB configuration options, such as character sets & table storage engines (InnoDB vs MyISAM). When this is placed in the dependency tree, all modules "imported" and "extended" below it will use these values.
+#### `<cascading charset string>`
+You can use this to set the table character sets (utf8, utf8mb4, latin1_swedish_ci, etc). When this is placed in the dependency tree, all modules "imported" and "extended" below it will use these values.
 
 ```javascript
-{
-  "charset": <string>,
-  "engine": <string>
-}
+"utf8"
 ```
 
-#### default `<cascading timestamp object>`
-Set this to null to disable the timestamp functionality or to create your own. When this is placed in the dependency tree, all modules "imported" and "extended" below it will use these values.
+#### `<cascading charset string>`
+You can use this to set the table storage engines (InnoDB, MyISAM, MEMORY, etc). When this is placed in the dependency tree, all modules "imported" and "extended" below it will use this value.
+
+```javascript
+"InnoDB"
+```
+
+#### default `<cascading timestamps object>`
+Set this to null to disable the timestamps functionality or to create your own. When this is placed in the dependency tree, all modules "imported" and "extended" below it will use these values.
 
 ```javascript
 {
@@ -318,8 +425,8 @@ Set this to null to disable the timestamp functionality or to create your own. W
 }
 ```
 
-#### default `<cascading fieldDefaults object>`
-You can use this to create custom field type "macros". When this is placed in the dependency tree, all modules "imported" and "extended" below it will use these values.
+#### default `<cascading customFields object>`
+You can use this to create custom field type "macros". When this is placed in the dependency tree, all tables & modules "imported" and "extended" below it will use these values.
 
 ```javascript
 {
@@ -329,8 +436,18 @@ You can use this to create custom field type "macros". When this is placed in th
         "autoInc": true,
         "unsigned": true
     },
+    "primaryId": {
+        "type": "int",
+        "key": "primary",
+        "unsigned": true
+    },
+    "foreignId": {
+        "type": "int",
+        "key": true,
+        "unsigned": true
+    },
     "string": {
-        "type": "string:255",
+        "type": "varchar:255",
         "default": ""
     }
 }
@@ -366,9 +483,11 @@ If the `<tables object>` is inside a module, they will inherit the modules names
 ```
 
 #### `<field object>`
+See (sourcecode)[https://github.com/dataserve/sql-schema-modulizer/blob/master/src/mysql.js#L135] for full list of types
+
 ```javascript
 {
-  "type": <int|string|string:length|timestamp|tinyint|smallint|mediumint|bigint>,
+  "type": <int|string(:length)|varchar(:length)|char(:length)|timestamp|tinyint|enum:(val,val)|etc>,
   "key": <primary|unique|true|default:false>,
   "nullable": <true|false|default:false>,
   "default": <string|integer|null|default:nullable==true: null, type==string: "", type==numeric: 0>,
@@ -405,8 +524,22 @@ There are several "wildcard" characters which can be used in extended modules. T
 #### `<relationships object>`
 ```javascript
 {
-  "belongsTo": [array of tableNames],
-  "hasOne": [array of tableNames],
-  "hasMany": [array of tableNames]
+  "belongsTo": [array of <relationshipBelongsTo string>],
+  "hasOne": [array of <relationshipHas string>],
+  "hasMany": [array of <relationshipHas string>]
 }
+```
+
+#### `<relationshipBelongsTo string>`
+Using "belongsTo" DOES create foreign keys by default. If you wish to disable foreign keys for a particular "belongsTo", use the format "tableName:null". By default, foreignColumnName === "id" and localColumnName === `${tableName}_id`.
+
+```javascript
+"relatedTableName:foreignColumnName,localColumnName"
+```
+
+#### `<relationshipHas string>`
+Using "hasOne" or "hasMany" does NOT create foreign keys. By default, foreignColumnName === `${tableName}_id` and localColumnName === "id".
+
+```javascript
+"relatedTableName:foreignColumnName,localColumnName"
 ```

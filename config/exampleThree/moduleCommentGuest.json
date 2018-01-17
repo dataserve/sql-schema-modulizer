@@ -1,0 +1,11 @@
+{
+    "tables": {
+        "comment_guest": {
+            "fields": {
+                "id": "autoIncId",
+                "name": "string:128",
+                "url": "string:255"
+            }
+        }
+    }
+}

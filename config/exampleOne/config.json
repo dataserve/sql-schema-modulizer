@@ -1,0 +1,18 @@
+{
+    "dbName": {
+        "tables": {
+            "user": {
+                "fields": {
+                    "id": {
+                        "type": "autoIncId"
+                    },
+                    "name": {
+                        "type": "string:255",
+                        "key": "unique"
+                    },
+                    "password": "string:128"
+                }
+            }
+        }
+    }
+}

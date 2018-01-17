@@ -1,0 +1,15 @@
+{
+    "extends": {
+        "mediaComment": null
+    },
+    "tables": {
+        "media": {
+            "fields": {
+                "id": "autoIncId",
+                "filename": "string:255",
+                "mime": "string:128",
+                ">comment_cnt": "int"
+            }
+        }
+    }
+}

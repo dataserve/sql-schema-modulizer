@@ -1,0 +1,24 @@
+{
+    "tables": {
+        "comment": {
+            "fields": {
+                "id": "autoIncId",
+                "^media_id": {
+                    "type": "int",
+                    "key": true
+                },
+                "comment_guest_id": {
+                    "type": "int",
+                    "key": true
+                },
+                "comment": "string:512"
+            },
+            "relationships": {
+                "belongsTo": [
+                    "^media",
+                    "comment_guest"
+                ]
+            }
+        }
+    }
+}
