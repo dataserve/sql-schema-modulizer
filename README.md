@@ -538,7 +538,7 @@ If the `<tables object>` is inside a module, they will inherit the modules names
 There are several "wildcard" characters which can be used in imported/extended modules. They can reference parent modules, children modules, and sibling tables.
 
 * `^tableName<optional string>` would create a column named `${tableName}<optional string>`, referencing the actual generated name of `tableName` in the **parent** module (extended modules only)
-* `^_id` is shorthand for above, however referes to the `defaultTable` of the **parent** module (extended modules only)
+* `^<optional string>` is shorthand for above, however referes to the `defaultTable` of the **parent** module (extended modules only)
 * `$tableName<optional string>` would create a column name `${tableName}<optional string>`, referencing the actual generated name of `tableName` in the **same** module
 * `>tableName<optional string>` would create a column name `${tableName}<optional string>`, referencing the actual generated name of `tableName` in a **child** module (extended modules only)
 
@@ -606,6 +606,6 @@ Using "hasOne" or "hasMany" does NOT create foreign keys. By default, ``foreignC
 There are several "wildcard" characters which can be used in imported/extended modules. They can reference parent modules, children modules, and sibling tables.
 
 * `^tableName` would reference the `tableName` table of the **parent** module (extended modules only)
-* `^` is shorthand for above and would reference the default table of the **parent** module (extended modules only)
+* `^` is shorthand for above and would reference the `defaultTable` of the **parent** module (extended modules only)
 * `$tableName` would reference the `tableName` table of the **same** module
 * `>tableName` would reference the `tableName` table of a **child** module (extended modules only)
