@@ -483,7 +483,7 @@ If the `<tables object>` is inside a module, they will inherit the modules names
 ```
 
 #### `<field object>`
-See (sourcecode)[https://github.com/dataserve/sql-schema-modulizer/blob/master/src/mysql.js#L135] for full list of types
+See [sourcecode](https://github.com/dataserve/sql-schema-modulizer/blob/master/src/mysql.js#L135) for full list of types
 
 ```javascript
 {
