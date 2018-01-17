@@ -531,14 +531,14 @@ There are several "wildcard" characters which can be used in extended modules. T
 ```
 
 #### `<relationshipBelongsTo string>`
-Using "belongsTo" DOES create foreign keys by default. If you wish to disable foreign keys for a particular "belongsTo", use the format "tableName:null". By default, `foreignColumnName === "id"` and ``localColumnName === `${tableName}_id```.
+Using "belongsTo" DOES create foreign keys by default. If you wish to disable foreign keys for a particular "belongsTo", use the format "tableName:null". By default, `foreignColumnName === "id"` and ``localColumnName === `${tableName}_id` ``.
 
 ```javascript
 "relatedTableName:foreignColumnName,localColumnName"
 ```
 
 #### `<relationshipHas string>`
-Using "hasOne" or "hasMany" does NOT create foreign keys. By default, ``foreignColumnName === `${tableName}_id``` and `localColumnName === "id"`.
+Using "hasOne" or "hasMany" does NOT create foreign keys. By default, ``foreignColumnName === `${tableName}_id` `` and `localColumnName === "id"`.
 
 ```javascript
 "relatedTableName:foreignColumnName,localColumnName"
