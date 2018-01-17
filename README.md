@@ -498,6 +498,8 @@ See [sourcecode](https://github.com/dataserve/sql-schema-modulizer/blob/master/s
 ```
 
 #### `<keys object>`
+This is used to specify keys with multiple columns. Keys with single columns are specified in the `<field object>`.
+
 ```javascript
 {
   <"keyName1">: <key object>,
@@ -506,14 +508,9 @@ See [sourcecode](https://github.com/dataserve/sql-schema-modulizer/blob/master/s
 }
 ```
 
-#### `"keyName" string`
-There are several "wildcard" characters which can be used in extended modules. They can reference parent modules, children modules, and sibling tables.
-* `^tableName` would reference the `tableName` table of the **parent** module
-* `^` is shorthand for above and would reference the default table of the **parent** module
-* `$tableName` would reference the `tableName` table of the **same** module
-* `>tableName` would reference the `tableName` table of a **child** module
-
 #### `<key object>`
+This is used to specify keys with multiple columns. Keys with single columns are specified in the `<field object>`.
+
 ```javascript
 {
   "type": <unique|true|default:true>,
@@ -534,12 +531,19 @@ There are several "wildcard" characters which can be used in extended modules. T
 Using "belongsTo" DOES create foreign keys by default. If you wish to disable foreign keys for a particular "belongsTo", use the format "tableName:null". By default, `foreignColumnName === "id"` and ``localColumnName === `${tableName}_id` ``.
 
 ```javascript
-"relatedTableName:foreignColumnName,localColumnName"
+"<relatedTableName string>:foreignColumnName,localColumnName"
 ```
 
 #### `<relationshipHas string>`
 Using "hasOne" or "hasMany" does NOT create foreign keys. By default, ``foreignColumnName === `${tableName}_id` `` and `localColumnName === "id"`.
 
 ```javascript
-"relatedTableName:foreignColumnName,localColumnName"
+"<relatedTableName string>:foreignColumnName,localColumnName"
 ```
+
+#### `<relatedTableName string>`
+There are several "wildcard" characters which can be used in extended modules. They can reference parent modules, children modules, and sibling tables.
+* `^tableName` would reference the `tableName` table of the **parent** module
+* `^` is shorthand for above and would reference the default table of the **parent** module
+* `$tableName` would reference the `tableName` table of the **same** module
+* `>tableName` would reference the `tableName` table of a **child** module
