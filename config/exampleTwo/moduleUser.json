@@ -15,7 +15,7 @@
         "user_login": {
             "fields": {
                 "id": "autoIncId",
-                "user_id": {
+                "$user_id": {
                     "type": "int",
                     "unsigned": true,
                     "key": true
