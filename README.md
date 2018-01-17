@@ -121,33 +121,33 @@ const moduleConfig = {
                         "key": "unique"
                     },
                     "password": "string:128"
+                }
+            },
+            "user_login": {
+                "fields": {
+                    "id": "autoIncId",
+                    "user_id": {
+                        "type": "int",
+                        "unsigned": true,
+                        "key": true
+                    }
                 },
-                "user_login": {
-                    "fields": {
-                        "id": "autoIncId",
-                        "user_id": {
-                            "type": "int",
-                            "unsigned": true,
-                            "key": true
-                        }
+                "relationships": {
+                    "belongsTo": [
+                        "$user"
+                    ]
+                },
+                "timestamps": {
+                    "modified": {
+                        "name": "modified_at",
+                        "type": "timestamp",
+                        "autoSetTimestamp": true,
+                        "autoUpdateTimestamp": true
                     },
-                    "relationships": {
-                        "belongsTo": [
-                            "$user"
-                        ]
-                    },
-                    "timestamps": {
-                        "modified": {
-                            "name": "modified_at",
-                            "type": "timestamp",
-                            "autoSetTimestamp": true,
-                            "autoUpdateTimestamp": true
-                        },
-                        "created": {
-                            "name": "created_at",
-                            "type": "timestamp",
-                            "autoSetTimestamp": true
-                        }
+                    "created": {
+                        "name": "created_at",
+                        "type": "timestamp",
+                        "autoSetTimestamp": true
                     }
                 }
             }
