@@ -435,6 +435,7 @@ This is used to specify a module. It can be in it's own file `config/module[Modu
     "engine": <cascading engine string>,
     "timestamps": <cascading timestamps object>,
     "customFields": <cascading customFields object>,
+    "defaultTable": <defaultTable string>
     "tables": <tables object>
   }
 }
@@ -501,6 +502,9 @@ You can use this to create custom field type "macros". When this is placed in th
 }
 ```
 
+#### `<defaultTable string>`
+Specify the default table in the module, used in the "^" wildcards from other modules. If defaultTable in a module is not specified, the first table in the JSON object is automatically set as the de3fault.
+
 #### `<tables object>`
 If the `<tables object>` is inside a module, they will inherit the modules namespace via a prepended string.
 
@@ -524,11 +528,20 @@ If the `<tables object>` is inside a module, they will inherit the modules names
 #### `<fields object>`
 ```javascript
 {
-  <"fieldName1">: <field object>,
-  <"fieldName2">: <field object>,
+  <fieldName string>: <field object>,
+  <fieldName string>: <field object>,
   ...
 }
 ```
+
+#### `<fieldName string>`
+There are several "wildcard" characters which can be used in imported/extended modules. They can reference parent modules, children modules, and sibling tables.
+
+* `^tableName<optional string>` would create a column named `${tableName}<optional string>`, referencing the actual generated name of `tableName` in the **parent** module (extended modules only)
+* `^_id` is shorthand for above, however referes to the `defaultTable` of the **parent** module (extended modules only)
+* `$tableName<optional string>` would create a column name `${tableName}<optional string>`, referencing the actual generated name of `tableName` in the **same** module
+* `>tableName<optional string>` would create a column name `${tableName}<optional string>`, referencing the actual generated name of `tableName` in a **child** module (extended modules only)
+
 
 #### `<field object>`
 See [sourcecode](https://github.com/dataserve/sql-schema-modulizer/blob/master/src/mysql.js#L135) for full list of types
@@ -590,8 +603,9 @@ Using "hasOne" or "hasMany" does NOT create foreign keys. By default, ``foreignC
 ```
 
 #### `<relatedTableName string>`
-There are several "wildcard" characters which can be used in extended modules. They can reference parent modules, children modules, and sibling tables.
-* `^tableName` would reference the `tableName` table of the **parent** module
-* `^` is shorthand for above and would reference the default table of the **parent** module
+There are several "wildcard" characters which can be used in imported/extended modules. They can reference parent modules, children modules, and sibling tables.
+
+* `^tableName` would reference the `tableName` table of the **parent** module (extended modules only)
+* `^` is shorthand for above and would reference the default table of the **parent** module (extended modules only)
 * `$tableName` would reference the `tableName` table of the **same** module
-* `>tableName` would reference the `tableName` table of a **child** module
+* `>tableName` would reference the `tableName` table of a **child** module (extended modules only)
