@@ -121,13 +121,41 @@ const moduleConfig = {
                         "key": "unique"
                     },
                     "password": "string:128"
+                },
+                "user_login": {
+                    "fields": {
+                        "id": "autoIncId",
+                        "user_id": {
+                            "type": "int",
+                            "unsigned": true,
+                            "key": true
+                        }
+                    },
+                    "relationships": {
+                        "belongsTo": [
+                            "$user"
+                        ]
+                    },
+                    "timestamps": {
+                        "modified": {
+                            "name": "modified_at",
+                            "type": "timestamp",
+                            "autoSetTimestamp": true,
+                            "autoUpdateTimestamp": true
+                        },
+                        "created": {
+                            "name": "created_at",
+                            "type": "timestamp",
+                            "autoSetTimestamp": true
+                        }
+                    }
                 }
             }
         }
     }
 };
                  
-modulizer.buildFromObject(dbConifg, moduleConfig);
+Modulizer.buildFromObject(dbConifg, moduleConfig);
 
 console.log(modulizer.getDbSchema("dbName"));
 
@@ -143,6 +171,16 @@ CREATE TABLE `user1` (
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1_swedish_ci;
 
+CREATE TABLE `user1_login` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL DEFAULT '0',
+  `modified_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `user1_login_ibfk_1` FOREIGN KEY (`user1_id`) REFERENCES `user1` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1_swedish_ci;
+
 CREATE TABLE `user2` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL DEFAULT '',
@@ -150,6 +188,16 @@ CREATE TABLE `user2` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
+) ENGINE=MyISM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `user2_login` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL DEFAULT '0',
+  `modified_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `user2_login_ibfk_1` FOREIGN KEY (`user2_id`) REFERENCES `user2` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=MyISM DEFAULT CHARSET=utf8;
 ```
 

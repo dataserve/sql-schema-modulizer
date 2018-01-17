@@ -518,7 +518,7 @@ class SqlSchemaModulizer {
                 
                 tables[tableName] = moduleContents.tables[table];
 
-                _object.merge(tables[tableName], cascadeVars);
+                tables[tableName] = _object.merge({}, cascadeVars, tables[tableName]);
                 
                 moduleInfo[module].assoc[table] = tableName;
                 
