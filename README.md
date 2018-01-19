@@ -432,16 +432,14 @@ This is used to specify a module. It can be in it's own file `config/module[Modu
 
 ```javascript
 {
-  "<moduleName>": {
-    "extends": <extends object>,
-    "imports": <imports object>,
-    "charset": <cascading charset string>,
-    "engine": <cascading engine string>,
-    "timestamps": <cascading timestamps object>,
-    "customFields": <cascading customFields object>,
-    "defaultTable": <defaultTable string>
-    "tables": <tables object>
-  }
+  "extends": <extends object>,
+  "imports": <imports object>,
+  "charset": <cascading charset string>,
+  "engine": <cascading engine string>,
+  "timestamps": <cascading timestamps object>,
+  "customFields": <cascading customFields object>,
+  "defaultTable": <defaultTable string>,
+  "tables": <tables object>
 }
 ```
 
