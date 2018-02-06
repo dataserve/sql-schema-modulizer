@@ -56,6 +56,12 @@ const CASCADE_DOWN_FIELDS = {
 
 const CASCADE_EXPAND_FIELDS = {};
 
+const ALLOWED_RELATIONSHIP_KEY = [
+    'belongsTo',
+    'hasOne',
+    'hasMany',
+];
+
 function jsonClone(str) {
     return JSON.parse(JSON.stringify(str));
 }
@@ -480,7 +486,7 @@ class SqlSchemaModulizer {
             }
   
             if (extendTables) {
-                _object.merge(moduleContents.tables, extendTables);
+                _object.mergeWith(moduleContents.tables, extendTables, this.mergeExtendTables);
             }
 
             let siblingsAssoc = {}, moduleTables = [];
@@ -564,6 +570,12 @@ class SqlSchemaModulizer {
             }
 
             _object.merge(this.config[dbName].tables, tables);
+        }
+    }
+
+    mergeExtendTables(objValue, srcValue, key, object, source) {
+        if (Array.isArray(objValue) && ALLOWED_RELATIONSHIP_KEY.indexOf(key) !== -1) {
+            return objValue.concat(srcValue);
         }
     }
 
