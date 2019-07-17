@@ -30,12 +30,12 @@
   "homepage": "https://github.com/dataserve/sql-schema-modulizer",
   "devDependencies": {
     "chai": "^4.1.2",
-    "codacy-coverage": "^2.0.3",
+    "codacy-coverage": "^3.4.0",
     "mocha": "^4.0.1"
   },
   "dependencies": {
     "commander": "^2.12.2",
-    "lodash": "^4.17.4",
+    "lodash": "^4.17.14",
     "type-of-is": "^3.5.1"
   }
 }
