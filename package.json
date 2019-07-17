@@ -1,6 +1,6 @@
 {
   "name": "sql-schema-modulizer",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Utilize reusable components as building blocks for architecting your SQL schema",
   "main": "index.js",
   "scripts": {
@@ -31,7 +31,7 @@
   "devDependencies": {
     "chai": "^4.1.2",
     "codacy-coverage": "^3.4.0",
-    "mocha": "^4.0.1"
+    "mocha": "^6.1.4"
   },
   "dependencies": {
     "commander": "^2.12.2",
